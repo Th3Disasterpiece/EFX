@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<menuDocument>
+  <menu>
+
+    <!-- Other items in the main menu go here -->
+
+    <!-- Divider before EFX Submenu -->
+    <separatorItem id="dividerBeforeEFX" />
+    
+    <!-- EFX Submenu -->
+    <subMenu id="EFXSubMenu">
+      <label>EFX</label>
+      <insertAfter refID="lastItemID" />
+
+      <!-- Divider before OUT_Tools Submenu -->
+      <separatorItem id="dividerBeforeOUTTools" />
+
+      <!-- OUT_Tools Submenu (Only for SOP context) -->
+      <subMenu id="OUTToolsSubMenu">
+        <label>OUT_Tools</label>
+        <context>SOP</context>
+
+        <!-- Add your scripts to the OUT_Tools submenu -->
+        <scriptItem id="null_out">
+          <label>Null Out</label>
+          <scriptPath>$EFX/scripts/python/out_tools/null_out.py</scriptPath>
+        </scriptItem>
+
+        <scriptItem id="merge_out">
+          <label>Merge Out</label>
+          <scriptPath>$EFX/scripts/python/out_tools/merge_out.py</scriptPath>
+        </scriptItem>
+
+        <scriptItem id="render_out">
+          <label>Render Out</label>
+          <scriptPath>$EFX/scripts/python/out_tools/render_out.py</scriptPath>
+        </scriptItem>
+      </subMenu>
+    </subMenu>
+
+  </menu>
+</menuDocument>
