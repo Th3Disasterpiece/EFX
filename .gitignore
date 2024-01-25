@@ -7,3 +7,8 @@ otls/dj/Sops/backup/sop_dj.pscaleMaster.1.0_bak1.hda
 otls/dj/Sops/backup/sop_dj.pscaleMaster.1.0_bak2.hda
 otls/dj/Sops/backup/sop_dj.pscaleMaster.1.0_bak3.hda
 otls/dj/Sops/backup/sop_dj.pscaleMaster.1.0_bak4.hda
+packages/venv/*
+pyDump/*
+*__pycache__*
+*.pyc
+.DS_Store
