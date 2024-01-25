@@ -1,0 +1,12 @@
+{
+	"env": [
+		{
+			"EFX": "/jobs/lib/packages/EFX"
+		},
+		{
+			"HOUDINI_PYTHONWARNINGS": "ignore"
+		},
+	],
+	"path": "$EFX"
+	
+}
