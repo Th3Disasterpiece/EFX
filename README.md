@@ -1,2 +1,3 @@
-This is the updated repo of out_tools script for houdini.
-More updates will followup soon.
+Enter The VFX repo -
+
+This is the updated WIP repo of the scripts for Houdini, like out_tools, SnipUI and many more updates that will follow soon.
