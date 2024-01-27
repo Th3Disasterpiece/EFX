@@ -11,10 +11,16 @@ houdini_root      = hou.getenv('EFX')
 venv_package_root = f'{houdini_root}/packages/venv/lib/python3.10/site-packages'
 otl_root          = f'{houdini_root}/otls'
 
+# Set JOB Variable
+hou.allowEnvironmentToOverwriteVariable("JOB", True)
+os.environ["JOB"] = '/jobs/'
+hou.putenv("JOB",os.environ["JOB"])
+jobs_root = os.environ["JOB"]
 
 # Add custom OTL/HDA paths here
 otl_paths = [
-	f"{otl_root}/dj",
+	f"{otl_root}",
+    f"{jobs_root}/lib/otls/dj",
 ]
 # Add all subdirectories under specified OTL paths
 for path in otl_paths:
@@ -32,13 +38,8 @@ updated_otlscan_path = ";".join([current_otlscan_path] + otl_paths)
 hou.putenv("HOUDINI_OTLSCAN_PATH", updated_otlscan_path + ';&')
 
 # Add PYTHON_PATH
-python_path = f"{venv_package_root}:{os.environ.get('PYTHON_PATH', '')}"
-hou.putenv("PYTHON_PATH", python_path)
-
-# Set JOB Variable
-hou.allowEnvironmentToOverwriteVariable("JOB", True)
-os.environ["JOB"] = '/jobs/'
-hou.putenv("JOB",os.environ["JOB"])
+python_path = f"{venv_package_root}:{os.environ.get('PYTHONPATH', '')}"
+hou.putenv("PYTHONPATH", python_path)
 
 
 # Append Packages to sys.path

@@ -5,7 +5,11 @@
  Note, that two definitions of the same element are not allowed in
  a single file. -->
 
-  <tool name="writeSnipUI" label="Write Snip UI" icon="/jobs/lib/packages/EFX/config/Icons/ComfyUI_00006_.png">
+  <toolshelf name="efx_snip_ui" label="EFX | Snip UI">
+    <memberTool name="write_snip_ui"/>
+  </toolshelf>
+
+  <tool name="write_snip_ui" label="Write Snip UI" icon="$EFX/config/Icons/upload_blue.png">
     <toolMenuContext name="network">
       <contextNetType>OBJ</contextNetType>
       <contextNetType>SOP</contextNetType>
@@ -19,7 +23,6 @@
       <contextNetType>TOP</contextNetType>
       <contextNetType>LOP</contextNetType>
     </toolMenuContext>
-    <script scriptType="hscript"><![CDATA[python $EFX/scripts/python/snip_ui/main.py
-]]></script>
+    <script scriptType="hscript"><![CDATA[python $EFX/scripts/python/snip_ui/write_snip_ui.py]]></script>
   </tool>
 </shelfDocument>
