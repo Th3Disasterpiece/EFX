@@ -21,6 +21,8 @@ scripts/python/snip_ui/backup/write_snip_ui_v11.py
 scripts/python/snip_ui/backup/write_snip_ui_v12.py
 scripts/python/snip_ui/backup/write_snip_ui_v13.py
 scripts/python/snip_ui/backup/write_snip_ui_v14.py
-*.py
 EFX.code-workspace
 .DS_Store
+scripts/python/snip_ui/backup/config.py
+scripts/python/snip_ui/backup/logging_utils.py
+scripts/python/snip_ui/backup/screenshot.py
