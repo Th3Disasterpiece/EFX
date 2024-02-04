@@ -9,8 +9,7 @@ This repository contains a collection of Python tools, shelf toolbars, and utili
 - They include Null out nodes, Object merge and Out nodes, and Render Out nodes.
 
 **Video Demo**
-
-[![Video Thumbnail](https://i.vimeocdn.com/video/123456789_340.jpg)](https://vimeo.com/653346110)
+[![Video Thumbnail](/Users/deepak/Downloads/Screenshot 2024-02-04 at 6.55.44 pm.png)](https://vimeo.com/653346110)
 
 
 
