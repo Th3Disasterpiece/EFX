@@ -10,7 +10,7 @@ This repository contains a collection of Python tools, shelf toolbars, and utili
 
 ### Video Demo
 
-[![Video Thumbnail](https://i.vimeocdn.com/video/653346110_240.jpg)](https://vimeo.com/653346110)
+[![Video Thumbnail](https://github.com/Th3Disasterpiece/EFX/blob/master/config/Icons/out_tools.png)](https://vimeo.com/653346110)
 
 2. **snip_ui**:
 - This is a work-in-progress UI that allows you to Save and Import nodes to disk for quick access.
