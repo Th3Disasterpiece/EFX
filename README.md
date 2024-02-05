@@ -8,10 +8,9 @@ This repository contains a collection of Python tools, shelf toolbars, and utili
 - These are basic Python scripts accessible via right-clicking on nodes.
 - They include Null out nodes, Object merge and Out nodes, and Render Out nodes.
 
-**Video Demo**
-[![Video Thumbnail](/Users/deepak/Downloads/Screenshot 2024-02-04 at 6.55.44 pm.png)](https://vimeo.com/653346110)
+### Video Demo
 
-
+[![Video Thumbnail](/Users/deepak/Downloads/gitTemp.png)](https://vimeo.com/653346110)
 
 2. **snip_ui**:
 - This is a work-in-progress UI that allows you to Save and Import nodes to disk for quick access.
