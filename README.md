@@ -22,7 +22,7 @@ This repository contains a collection of Python tools, shelf toolbars, and utili
 
 **SnipUI Shelftool**
 
-<img src="https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/snipUIShelftool_snapshot.png" alt="SnipUI Shelftool" width="300">
+<img src="https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/snipUIShelftool_snapshot.png" alt="SnipUI Shelftool" width="600">
 
 **WriteSnipUI (Completed)**
 
@@ -30,7 +30,7 @@ This repository contains a collection of Python tools, shelf toolbars, and utili
 
 **ReadSnipUI (Incomplete)**
 
-<img src="https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/readSnipUI_snapshot.png" alt="Read SnipUI" width="300">
+<img src="https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/readSnipUI_snapshot.png" alt="Read SnipUI" width="500">
 
 ---
 
