@@ -1,36 +1,36 @@
-### Enter The VFX (EFX) Tools for Houdini
+## Enter The VFX (EFX) Tools for Houdini
 
-This repository contains a collection of Python tools, shelf toolbars, and utility scripts that I commonly use as an FX artist working with Houdini. These scripts aim to streamline common tasks, improve efficiency, and enhance the overall user experience within the Houdini environment.
+This repository contains a collection of Python tools, shelf toolbars, and utility scripts for FX artists working with Houdini. These tools aim to streamline tasks and enhance the user experience within the Houdini environment.
 
 ---
 
 ### Tools & Scripts:
 
-1. **out_tools**:
-- These are basic Python scripts accessible via right-clicking on nodes.
-- They include Null out nodes, Object merge and Out nodes, and Render Out nodes.
+- **Out Tools**:
+  - Basic Python scripts accessible via right-clicking on nodes.
+  - Include Null out nodes, Object merge and Out nodes, and Render Out nodes.
 
-### Video Demo
+**Video Demo**
 
 [<img src="https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/out_tools_snapshot.png" width="200">](https://vimeo.com/653346110)
 
-.........
+---
 
+- **Snip UI**:
+  - A work-in-progress UI for saving and importing nodes to disk for quick access.
+  - Helps create a personalized library of commonly used systems, examples, and setups.
 
-2. **snip_ui**:
-- This is a work-in-progress UI that allows you to Save and Import nodes to disk for quick access.
-- This helps create a personalized library of systems, examples, and setups commonly used for reference or starting points in the workflow.
-- Demo and More updates with details to follow soon.
+**SnipUI Shelftool**
 
-SnipUI Shelftool -
-![write SnipUI](https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/snipUIShelftool_snapshot.png)
-  
-WriteSnipUI -
-![write SnipUI](https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/writeSnipUI_snapshot.png)
+<img src="https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/snipUIShelftool_snapshot.png" alt="SnipUI Shelftool" width="300">
 
-ReadSnipUI -
-![write SnipUI](https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/readSnipUI_snapshot.png)
+**WriteSnipUI (Completed)**
 
+<img src="https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/writeSnipUI_snapshot.png" alt="Write SnipUI" width="300">
+
+**ReadSnipUI (Incomplete)**
+
+<img src="https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/readSnipUI_snapshot.png" alt="Read SnipUI" width="300">
 
 ---
 
