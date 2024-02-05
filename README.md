@@ -17,8 +17,8 @@ This repository contains a collection of Python tools, shelf toolbars, and utili
 ---
 
 - **Snip UI**:
-  - A work-in-progress UI for saving and importing nodes to disk for quick access.
-  - Helps create a personalized library of commonly used systems, examples, and setups.
+  - A work-in-progress UI for saving and importing a collection of nodes to disk for quick access.
+  - Helps create a personalized library of commonly used systems, examples, vex and python snippets, and setups.
 
 **SnipUI Shelftool**
 
