@@ -2,6 +2,8 @@
 
 This repository contains a collection of Python tools, shelf toolbars, and utility scripts that I commonly use as an FX artist working with Houdini. These scripts aim to streamline common tasks, improve efficiency, and enhance the overall user experience within the Houdini environment.
 
+---
+
 ### Tools & Scripts:
 
 1. **out_tools**:
@@ -12,6 +14,8 @@ This repository contains a collection of Python tools, shelf toolbars, and utili
 
 [<img src="https://github.com/Th3Disasterpiece/EFX/blob/master/config/Icons/out_tools.png" width="200">](https://vimeo.com/653346110)
 
+---
+
 2. **snip_ui**:
 - This is a work-in-progress UI that allows you to Save and Import nodes to disk for quick access.
 - This helps create a personalized library of systems, examples, and setups commonly used for reference or starting points in the workflow.
@@ -19,6 +23,7 @@ This repository contains a collection of Python tools, shelf toolbars, and utili
 
 ![write SnipUI](https://github.com/github.png)
 
+---
 
 ### Installation:
 
@@ -27,6 +32,8 @@ To get started with these EFX tools, follow these steps:
 2. Ensure you have the necessary dependencies installed, such as PySide2, and are using Houdini 20 (python3.10).
 3. Copy the "EFX.json" file from the downloaded repository to the "packages" directory in your Houdini installation folder.
 4. Open the "EFX.json" file and replace the value of the "EFX" key with the path to the downloaded repository on your machine.
+
+---
 
 ### Contributing:
 
