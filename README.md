@@ -12,7 +12,7 @@ This repository contains a collection of Python tools, shelf toolbars, and utili
 
 ### Video Demo
 
-[<img src="https://github.com/Th3Disasterpiece/EFX/blob/master/config/Icons/out_tools.png" width="200">](https://vimeo.com/653346110)
+[<img src="https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/out_tools_snapshot.png" width="200">](https://vimeo.com/653346110)
 
 .........
 
@@ -22,7 +22,15 @@ This repository contains a collection of Python tools, shelf toolbars, and utili
 - This helps create a personalized library of systems, examples, and setups commonly used for reference or starting points in the workflow.
 - Demo and More updates with details to follow soon.
 
-![write SnipUI](https://github.com/github.png)
+SnipUI Shelftool -
+![write SnipUI](https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/snipUIShelftool_snapshot.png)
+  
+WriteSnipUI -
+![write SnipUI](https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/writeSnipUI_snapshot.png)
+
+ReadSnipUI -
+![write SnipUI](https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/readSnipUI_snapshot.png)
+
 
 ---
 
