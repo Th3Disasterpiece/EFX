@@ -7,6 +7,7 @@
 
   <toolshelf name="efx_snip_ui" label="EFX | Snip UI">
     <memberTool name="write_snip_ui"/>
+    <memberTool name="readSnipUIOld"/>
   </toolshelf>
 
   <tool name="write_snip_ui" label="Write Snip UI" icon="$EFX/config/Icons/upload_blue.png">
@@ -24,5 +25,235 @@
       <contextNetType>LOP</contextNetType>
     </toolMenuContext>
     <script scriptType="hscript"><![CDATA[python $EFX/scripts/python/snip_ui/write_snip_ui.py]]></script>
+  </tool>
+
+  <tool name="readSnipUIOld" label="Read Snip Ui Old" icon="/jobs/library/fxLibrary/packages/EFX/config/Icons/download_green.png">
+    <script scriptType="python"><![CDATA[import hou
+from PySide2 import QtWidgets, QtCore, QtGui
+import os
+
+path = '/Users/deepak/jobs/library/fxLibrary/packages/EFX/pyDump/deepak'
+
+# Define global base_paths variable
+base_paths = {
+    "Snips": path,
+    "Vex": path,
+    "Python": path,
+    "Materials": path,
+    "Textures": path,
+    "HDRIs": path,
+    "Models": path,
+    "Lights": path,
+}
+
+class MyShelfToolUI(QtWidgets.QWidget):
+    instances = []
+
+    def __init__(self):
+        super(MyShelfToolUI, self).__init__()
+
+        self.setWindowTitle("My Shelf Tool")
+        self.setMinimumWidth(1200)
+        self.setMinimumHeight(800)
+
+        # Create UI elements
+        self.toggle_preview_checkbox = QtWidgets.QCheckBox("Enable Preview", checked=True)
+
+        # Line edit for filtering files
+        self.filter_line_edit = QtWidgets.QLineEdit()
+        self.filter_line_edit.setPlaceholderText("Filter files...")
+
+        # Tab widget for main file categories
+        self.main_category_tab_widget = QtWidgets.QTabWidget()
+
+        # Create UI elements
+        self.load_button = QtWidgets.QPushButton("Load")
+        self.close_button = QtWidgets.QPushButton("Close")
+
+        # Layout
+        layout = QtWidgets.QHBoxLayout(self)
+
+        # Left side layout
+        left_layout = QtWidgets.QVBoxLayout()
+        left_layout.addWidget(self.toggle_preview_checkbox)
+        left_layout.addWidget(self.filter_line_edit)
+        left_layout.addWidget(self.main_category_tab_widget)
+        left_layout.addWidget(self.load_button)
+        left_layout.addWidget(self.close_button)
+
+        layout.addLayout(left_layout)
+
+        # Populate main file categories
+        categories = ["Snips", "Vex", "Python", "Materials", "Textures", "HDRIs", "Models", "Lights"]
+
+        for category in categories:
+            file_list_widget = QtWidgets.QTreeWidget()
+            file_list_widget.setHeaderLabels(["Name", "Date Created", "Date Modified", "Size"])
+
+            preview_tab_widget = QtWidgets.QTabWidget()
+
+            self.populate_file_list(base_paths[category], file_list_widget, preview_tab_widget)
+
+            tab_index = self.main_category_tab_widget.addTab(file_list_widget, category)
+            self.main_category_tab_widget.setTabToolTip(tab_index, f"View {category} files")
+
+        # Connect signals to functions
+        self.filter_line_edit.textChanged.connect(self.filter_files)
+        self.main_category_tab_widget.currentChanged.connect(self.update_preview)
+        self.load_button.clicked.connect(self.load_action)
+        self.close_button.clicked.connect(self.close_action)
+        self.toggle_preview_checkbox.stateChanged.connect(self.toggle_preview)
+
+        # Store a reference to the instance
+        MyShelfToolUI.instances.append(self)
+
+        # Initialize the preview window state
+        self.preview_visible = True
+
+    def populate_file_list(self, base_directory, file_list_widget, preview_tab_widget):
+        # Clear existing items in the list
+        file_list_widget.clear()
+
+        # Get a list of all files in the specified directory
+        all_files = os.listdir(base_directory)
+
+        # Organize files based on common prefix
+        file_groups = {}
+        for file_name in all_files:
+            # Skip items without at least 2 underscores
+            if file_name.count('_') < 2:
+                continue
+
+            # Extract the prefix (e.g., vex_, trick_)
+            prefix = file_name.split("_", 1)[0]
+            if prefix not in file_groups:
+                file_groups[prefix] = []
+
+            file_groups[prefix].append(file_name)
+
+        # Add files to the tree widget
+        for prefix, files in file_groups.items():
+            prefix_item = QtWidgets.QTreeWidgetItem([prefix])
+            for file_name in files:
+                full_path = os.path.join(base_directory, file_name)
+                date_created = os.path.getctime(full_path)
+                date_modified = os.path.getmtime(full_path)
+                size = os.path.getsize(full_path)
+
+                # Convert timestamps to human-readable format
+                date_created_str = self.format_timestamp(date_created)
+                date_modified_str = self.format_timestamp(date_modified)
+
+                file_item = QtWidgets.QTreeWidgetItem([file_name, date_created_str, date_modified_str, f"{size / 1024:.2f} KB"])
+                prefix_item.addChild(file_item)
+            file_list_widget.addTopLevelItem(prefix_item)
+            prefix_item.setExpanded(True)
+
+        # Adjust the width of the "Name" column to accommodate longer names
+        file_list_widget.setColumnWidth(0, 300)
+
+    def format_timestamp(self, timestamp):
+        try:
+            return QtCore.QDateTime.fromSecsSinceEpoch(int(timestamp)).toString("yyyy-MM-dd hh:mm:ss")
+        except Exception as e:
+            print(f"Error formatting timestamp: {e}")
+            return "Error"
+
+    def filter_files(self):
+        filter_text = self.filter_line_edit.text().lower()
+        current_tab_index = self.main_category_tab_widget.currentIndex()
+        current_tab = self.main_category_tab_widget.widget(current_tab_index)
+        for i in range(current_tab.topLevelItemCount()):
+            prefix_item = current_tab.topLevelItem(i)
+            for j in range(prefix_item.childCount()):
+                file_item = prefix_item.child(j)
+                file_name = file_item.text(0).lower()
+                file_item.setHidden(filter_text not in file_name)
+            # Hide the prefix item if no matching files
+            prefix_item.setHidden(all(file_item.isHidden() for file_item in [prefix_item.child(j) for j in range(prefix_item.childCount())]))
+
+    def update_preview(self):
+        if self.toggle_preview_checkbox.isChecked() and self.preview_visible:
+            current_tab_index = self.main_category_tab_widget.currentIndex()
+            current_tab = self.main_category_tab_widget.widget(current_tab_index)
+            selected_item = current_tab.currentItem()
+            if selected_item:
+                selected_file = selected_item.text(0)  # Get the text of the first column
+                category = self.main_category_tab_widget.tabText(current_tab_index)
+                file_path = os.path.join(base_paths[category], selected_file)
+                file_content = self.read_file_content(file_path)
+
+                # Update the preview tab with QTextBrowser
+                preview_text_browser = QtWidgets.QTextBrowser()
+                preview_text_browser.setPlainText(file_content)
+                preview_tab_widget = self.main_category_tab_widget.currentWidget().parentWidget().widget(1)
+                preview_tab_widget.clear()
+                preview_tab_widget.addTab(preview_text_browser, selected_file)
+        else:
+            current_tab_index = self.main_category_tab_widget.currentIndex()
+            preview_tab_widget = self.main_category_tab_widget.currentWidget().parentWidget().widget(1)
+            preview_tab_widget.clear()
+
+    def read_file_content(self, file_path):
+        try:
+            with open(file_path, 'r') as file:
+                content = file.read()
+            return content
+        except Exception as e:
+            return f"Error reading file: {e}"
+
+    def load_selected_file(self):
+        selected_item = self.main_category_tab_widget.currentWidget().currentItem()
+        current_tab_index = self.main_category_tab_widget.currentIndex()
+        category = self.main_category_tab_widget.tabText(current_tab_index)
+        if selected_item:
+            selected_file = selected_item.text(0)  # Get the text of the first column
+            file_path = os.path.join(base_paths[category], selected_file)
+
+            # Load the selected script into Houdini
+            exec_network = self.get_current_network_tab()
+            if exec_network:
+                parent = exec_network.pwd()
+                parent.loadItemsFromFile(file_path)
+
+                # Close the UI after loading
+                self.close()
+            else:
+                hou.ui.displayMessage("No network tabs found to load into.", severity=hou.severityType.Error)
+
+    def get_current_network_tab(self):
+        network_tabs = [t for t in hou.ui.paneTabs() if t.type() == hou.paneTabType.NetworkEditor]
+        if network_tabs:
+            for tab in network_tabs:
+                if tab.isCurrentTab():
+                    return tab
+        return None
+
+    def load_action(self):
+        # Perform the desired action when the "Load" button is clicked
+        self.load_selected_file()
+
+    def close_action(self):
+        self.close()
+
+    def toggle_preview(self, state):
+        self.preview_visible = state
+        self.update_preview()
+
+def show_ui():
+    # Check if the UI instance already exists
+    for ui_instance in MyShelfToolUI.instances:
+        if ui_instance.isVisible():
+            ui_instance.raise_()
+            return
+
+    # Create and show the UI
+    ui = MyShelfToolUI()
+    ui.setObjectName("MyShelfToolUI")
+    ui.show()
+
+# Run the UI
+show_ui()
+]]></script>
   </tool>
 </shelfDocument>

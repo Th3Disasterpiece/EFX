@@ -20,7 +20,7 @@ jobs_root = os.environ["JOB"]
 # Add custom OTL/HDA paths here
 otl_paths = [
 	f"{otl_root}",
-    f"{jobs_root}/lib/otls/dj",
+    f"{jobs_root}/library/fxLibrary/otls/dj",
 ]
 # Add all subdirectories under specified OTL paths
 for path in otl_paths:

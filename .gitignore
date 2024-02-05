@@ -26,3 +26,6 @@ EFX.code-workspace
 scripts/python/snip_ui/backup/config.py
 scripts/python/snip_ui/backup/logging_utils.py
 scripts/python/snip_ui/backup/screenshot.py
+pyDump/deepak/*
+.DS_Store
+.DS_Store
