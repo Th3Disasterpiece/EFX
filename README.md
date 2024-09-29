@@ -4,18 +4,6 @@ This repository contains a collection of Python tools, shelf toolbars, and utili
 
 ---
 
-### Tools & Scripts:
-
-- **Out Tools**:
-  - Basic Python scripts accessible via right-clicking on nodes.
-  - Include Null out nodes, Object merge and Out nodes, and Render Out nodes.
-
-**Video Demo**
-
-[<img src="https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/out_tools_snapshot.png" width="200">](https://vimeo.com/653346110)
-
----
-
 - **Setup Library**:
   - UI for saving and importing Houdini setups or a collection of nodes to disk for quick access.
   - This UI is meant to create descriptions, Previews, and snapshots for quick overview.
@@ -27,14 +15,31 @@ This repository contains a collection of Python tools, shelf toolbars, and utili
 
 **ReadSnipUI**
 
-<img src="https://github.com/Th3Disasterpiece/EFX/blob/bd8c3c9e18339436f2fe9148edf09b3b8815509e/config/thumbnails/readSnipUI02_snapshot.png" alt="Read SnipUI" width="400">
+<img src="https://github.com/Th3Disasterpiece/EFX/blob/bd8c3c9e18339436f2fe9148edf09b3b8815509e/config/thumbnails/readSnipUI02_snapshot.png" alt="Read SnipUI" width="800">
 
 **WriteSnipUI**
 
-<img src="https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/writeSnipUI_snapshot.png" alt="Write SnipUI" width="400">
+<img src="https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/writeSnipUI_snapshot.png" alt="Write SnipUI" width="300">
 
 
 ---
+
+
+### Tools & Scripts:
+
+- **Out Tools**:
+  - Basic Python scripts accessible via right-clicking on nodes.
+  - Include Null out nodes, Object merge and Out nodes, and Render Out nodes.
+
+**Video Demo**
+
+[<img src="https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/out_tools_snapshot.png" width="200">](https://vimeo.com/653346110)
+
+
+---
+
+
+
 
 ### Installation:
 
