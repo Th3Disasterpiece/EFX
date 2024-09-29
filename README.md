@@ -27,7 +27,7 @@ This repository contains a collection of Python tools, shelf toolbars, and utili
 
 **ReadSnipUI**
 
-<img src="https://github.com/Th3Disasterpiece/EFX/blob/a8a304c5cba50b6fb94bd8a41340b576e3d2ba6d/config/thumbnails/readSnipUI02_snapshot.png" alt="Read SnipUI" width="400">
+<img src="https://github.com/Th3Disasterpiece/EFX/blob/bd8c3c9e18339436f2fe9148edf09b3b8815509e/config/thumbnails/readSnipUI02_snapshot.png" alt="Read SnipUI" width="400">
 
 **WriteSnipUI**
 
