@@ -9,15 +9,15 @@ This repository contains a collection of Python tools, shelf toolbars, and utili
   - This UI is meant to create descriptions, Previews, and snapshots for quick overview.
   - Helps create a personalized library of commonly used systems, examples, vex and python snippets, and setups.
 
-**SnipUI Shelftool**
+SnipUI Shelftool
 
 <img src="https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/snipUIShelftool_snapshot.png" alt="SnipUI Shelftool" width="300">
 
-**ReadSnipUI**
+*ReadSnipUI*
 
 <img src="https://github.com/Th3Disasterpiece/EFX/blob/bd8c3c9e18339436f2fe9148edf09b3b8815509e/config/thumbnails/readSnipUI02_snapshot.png" alt="Read SnipUI" width="800">
 
-**WriteSnipUI**
+*WriteSnipUI*
 
 <img src="https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/writeSnipUI_snapshot.png" alt="Write SnipUI" width="300">
 
