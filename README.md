@@ -4,6 +4,7 @@ This repository contains a collection of Python tools, shelf toolbars, and utili
 
 ---
 
+
 - **Setup Library**:
   - UI for saving and importing Houdini setups or a collection of nodes to disk for quick access.
   - This UI is meant to create descriptions, Previews, and snapshots for a quick overview.
@@ -11,11 +12,11 @@ This repository contains a collection of Python tools, shelf toolbars, and utili
 
 *EFX Shelftool*
 
-<img src="https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/snipUIShelftool_snapshot.png" alt="SnipUI Shelftool" width="500">
+<img src="https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/snipUIShelftool_snapshot.png" alt="SnipUI Shelftool" width="600">
 
 *Setup Library*
 
-<img src="https://github.com/Th3Disasterpiece/EFX/blob/a66d58fcd3849bd4b44574d059d21d4e3335d971/config/thumbnails/setupLib.gif" alt="Write SnipUI" width="800">
+<img src="https://github.com/Th3Disasterpiece/EFX/blob/a66d58fcd3849bd4b44574d059d21d4e3335d971/config/thumbnails/setupLib.gif" alt="Write SnipUI" width="600">
 
 
 ---
@@ -33,8 +34,6 @@ This repository contains a collection of Python tools, shelf toolbars, and utili
 
 
 ---
-
-
 
 
 ### Installation:
