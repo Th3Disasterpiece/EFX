@@ -5,7 +5,7 @@ This repository contains a collection of Python tools, shelf toolbars, and utili
 ---
 
 
-- **Setup Library**:
+**Setup Library**:
   - UI for saving and importing Houdini setups or a collection of nodes to disk for quick access.
   - This UI is meant to create descriptions, Previews, and snapshots for a quick overview.
   - Helps create a personalized library of commonly used systems, examples, vex and python snippets, and setups.
