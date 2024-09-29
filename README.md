@@ -19,7 +19,7 @@ This repository contains a collection of Python tools, shelf toolbars, and utili
 
 *WriteSnipUI*
 
-<img src="https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/writeSnipUI_snapshot.png" alt="Write SnipUI" width="500">
+<img src="https://github.com/Th3Disasterpiece/EFX/blob/24e86cb013153747b21e330549ec15de38fe1462/config/thumbnails/setupLib.mov" alt="Write SnipUI" width="500">
 
 
 ---
