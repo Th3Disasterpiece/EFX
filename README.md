@@ -16,21 +16,23 @@ This repository contains a collection of Python tools, shelf toolbars, and utili
 
 ---
 
-- **Snip UI**:
-  - A work-in-progress UI for saving and importing a collection of nodes to disk for quick access.
+- **Setup Library**:
+  - UI for saving and importing Houdini setups or a collection of nodes to disk for quick access.
+  - This UI is meant to create descriptions, Previews, and snapshots for quick overview.
   - Helps create a personalized library of commonly used systems, examples, vex and python snippets, and setups.
 
 **SnipUI Shelftool**
 
 <img src="https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/snipUIShelftool_snapshot.png" alt="SnipUI Shelftool" width="300">
 
-**WriteSnipUI (Completed)**
+**ReadSnipUI**
 
-<img src="https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/writeSnipUI_snapshot.png" alt="Write SnipUI" width="300">
+<img src="https://github.com/Th3Disasterpiece/EFX/blob/a8a304c5cba50b6fb94bd8a41340b576e3d2ba6d/config/thumbnails/readSnipUI_snapshot.png" alt="Read SnipUI" width="400">
 
-**ReadSnipUI (Incomplete)**
+**WriteSnipUI**
 
-<img src="https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/readSnipUI_snapshot.png" alt="Read SnipUI" width="300">
+<img src="https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/writeSnipUI_snapshot.png" alt="Write SnipUI" width="400">
+
 
 ---
 
