@@ -16,8 +16,9 @@ This repository contains a collection of Python tools, shelf toolbars, and utili
 
 ---
 
-- **Snip UI**:
-  - A work-in-progress UI for saving and importing a collection of nodes to disk for quick access.
+- **Setup Library**:
+  - UI for saving and importing Houdini setups or a collection of nodes to disk for quick access.
+  - This UI is meant to create descriptions, Previews, and snapshots for quick overview.
   - Helps create a personalized library of commonly used systems, examples, vex and python snippets, and setups.
 
 **SnipUI Shelftool**
