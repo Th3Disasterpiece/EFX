@@ -24,9 +24,9 @@ This repository contains a collection of Python tools, shelf toolbars, and utili
 
 ### Tools & Scripts:
 
-- **Out Tools**:
-  - Basic Python scripts accessible via right-clicking on nodes.
-  - Include Null out nodes, Object merge and Out nodes, and Render Out nodes.
+**Out Tools**:
+- Basic Python scripts accessible via right-clicking on nodes.
+- Include Null out nodes, Object merge and Out nodes, and Render Out nodes.
 
 **Video Demo**
 
