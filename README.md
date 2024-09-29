@@ -25,13 +25,14 @@ This repository contains a collection of Python tools, shelf toolbars, and utili
 
 <img src="https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/snipUIShelftool_snapshot.png" alt="SnipUI Shelftool" width="300">
 
-**WriteSnipUI (Completed)**
+**ReadSnipUI**
+
+<img src="https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/readSnipUI_snapshot.png" alt="Read SnipUI" width="400">
+
+**WriteSnipUI**
 
 <img src="https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/writeSnipUI_snapshot.png" alt="Write SnipUI" width="400">
 
-**ReadSnipUI (Incomplete)**
-
-<img src="https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/readSnipUI_snapshot.png" alt="Read SnipUI" width="400">
 
 ---
 
