@@ -1,31 +1,38 @@
-#### **Enter The VFX (EFX) Tools for Houdini**
+Enter The VFX (EFX) Tools for Houdini
+=======================================
 
 This repository contains a collection of Python tools, shelf toolbars, and utility scripts designed for FX artists working in Houdini. These tools aim to streamline tasks and enhance the user experience within the Houdini environment.
 
 ---
 
-#### **Setup Library**
+Setup Library
+-------------
 
 1. Provides a user interface (UI) for saving and importing Houdini setups or collections of nodes to disk for quick access.  
 2. The UI allows users to create descriptions, previews, and snapshots for a quick overview.  
 3. Helps build a personalized library of commonly used systems, examples, VEX and Python snippets, and setups.
 
-<img src="https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/snipUIShelftool_snapshot.png" alt="SnipUI Shelftool" width="500">
+![SnipUI Shelftool](https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/snipUIShelftool_snapshot.png)
 
-<img src="https://github.com/Th3Disasterpiece/EFX/blob/a66d58fcd3849bd4b44574d059d21d4e3335d971/config/thumbnails/setupLib.gif" alt="Setup Library" width="500">
+Setup Library UI
+----------------
+
+![Setup Library](https://github.com/Th3Disasterpiece/EFX/blob/a66d58fcd3849bd4b44574d059d21d4e3335d971/config/thumbnails/setupLib.gif)
 
 ---
 
-#### **Out Tools**
+Out Tools
+---------
 
 1. A collection of basic Python scripts accessible via right-clicking on nodes.  
 2. Includes scripts for creating null output nodes, object merge and output nodes, and render output nodes.
 
-[<img src="https://github.com/Th3Disasterpiece/EFX/blob/6ad4feec400e0dd172280167b4309b73627e0828/config/thumbnails/out_tools.gif" width="500">](https://vimeo.com/653346110)
+[![Video Demo](https://github.com/Th3Disasterpiece/EFX/blob/6ad4feec400e0dd172280167b4309b73627e0828/config/thumbnails/out_tools.gif)](https://vimeo.com/653346110)
 
 ---
 
-#### **Installation**
+Installation
+------------
 
 To get started with these EFX tools, follow these steps:
 
@@ -36,6 +43,7 @@ To get started with these EFX tools, follow these steps:
 
 ---
 
-#### **Contributing**
+Contributing
+------------
 
 Contributions to this project are welcome! If you have ideas for additional features, improvements, or bug fixes, feel free to submit a pull request. Please ensure that any contributions align with the goals and scope of this project.
