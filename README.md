@@ -12,8 +12,6 @@ This repository contains a collection of Python tools, shelf toolbars, and utili
 
 <img src="https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/snipUIShelftool_snapshot.png" alt="SnipUI Shelftool" width="600">
 
-**Setup Library UI**
-
 <img src="https://github.com/Th3Disasterpiece/EFX/blob/a66d58fcd3849bd4b44574d059d21d4e3335d971/config/thumbnails/setupLib.gif" alt="Setup Library" width="600">
 
 ---
