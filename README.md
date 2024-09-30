@@ -21,7 +21,8 @@
 
 ### **<sup>Out Tools</sup>**
 <sup>
-1. A collection of basic Python scripts accessible via right-clicking on nodes.  
+1. A collection of basic Python scripts accessible via right-clicking on nodes.
+
 2. Includes scripts for creating null output nodes, object merge and output nodes, and render output nodes.
 </sup>
 
