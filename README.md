@@ -10,9 +10,9 @@ This repository contains a collection of Python tools, shelf toolbars, and utili
 2. The UI allows users to create descriptions, previews, and snapshots for a quick overview.  
 3. Helps build a personalized library of commonly used systems, examples, VEX and Python snippets, and setups.
 
-<img src="https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/snipUIShelftool_snapshot.png" alt="SnipUI Shelftool" width="600">
+<img src="https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/snipUIShelftool_snapshot.png" alt="SnipUI Shelftool" width="500">
 
-<img src="https://github.com/Th3Disasterpiece/EFX/blob/a66d58fcd3849bd4b44574d059d21d4e3335d971/config/thumbnails/setupLib.gif" alt="Setup Library" width="600">
+<img src="https://github.com/Th3Disasterpiece/EFX/blob/a66d58fcd3849bd4b44574d059d21d4e3335d971/config/thumbnails/setupLib.gif" alt="Setup Library" width="500">
 
 ---
 
@@ -21,7 +21,7 @@ This repository contains a collection of Python tools, shelf toolbars, and utili
 1. A collection of basic Python scripts accessible via right-clicking on nodes.  
 2. Includes scripts for creating null output nodes, object merge and output nodes, and render output nodes.
 
-[<img src="https://github.com/Th3Disasterpiece/EFX/blob/6ad4feec400e0dd172280167b4309b73627e0828/config/thumbnails/out_tools.gif" width="600">](https://vimeo.com/653346110)
+[<img src="https://github.com/Th3Disasterpiece/EFX/blob/6ad4feec400e0dd172280167b4309b73627e0828/config/thumbnails/out_tools.gif" width="500">](https://vimeo.com/653346110)
 
 ---
 
