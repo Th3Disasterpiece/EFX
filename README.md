@@ -25,8 +25,6 @@
 2. Includes scripts for creating null output nodes, object merge and output nodes, and render output nodes.
 </sup>
 
-**<sup>Video Demo :</sup>**
-
 [<img src="https://github.com/Th3Disasterpiece/EFX/blob/6ad4feec400e0dd172280167b4309b73627e0828/config/thumbnails/out_tools.gif" width="600">](https://vimeo.com/653346110)
 
 ---
