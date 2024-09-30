@@ -1,3 +1,4 @@
+<small>
 ##### Enter The VFX (EFX) Tools for Houdini
 
 This repository contains a collection of Python tools, shelf toolbars, and utility scripts for FX artists working with Houdini. These tools aim to streamline tasks and enhance the user experience within the Houdini environment.
@@ -40,3 +41,4 @@ To get started with these EFX tools, follow these steps:
 
 ###### Contributing
 Contributions to this project are welcome! If you have ideas for additional features, improvements, or bug fixes, feel free to submit a pull request. Please ensure that any contributions align with the goals and scope of this project.
+</small>
