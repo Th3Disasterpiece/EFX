@@ -6,9 +6,9 @@
 
 ### **<sup>Setup Library</sup>**
 <sup>
-- Provides a user interface (UI) for saving and importing Houdini setups or collections of nodes to disk for quick access.
-- The UI allows users to create descriptions, previews, and snapshots for a quick overview.
-- Helps build a personalized library of commonly used systems, examples, VEX and Python snippets, and setups.
+1. Provides a user interface (UI) for saving and importing Houdini setups or collections of nodes to disk for quick access.
+2. The UI allows users to create descriptions, previews, and snapshots for a quick overview.
+3. Helps build a personalized library of commonly used systems, examples, VEX and Python snippets, and setups.
 </sup>
 
 <img src="https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/snipUIShelftool_snapshot.png" alt="SnipUI Shelftool" width="600">
@@ -21,8 +21,8 @@
 
 ### **<sup>Out Tools</sup>**
 <sup>
-- A collection of basic Python scripts accessible via right-clicking on nodes.
-- Includes scripts for creating null output nodes, object merge and output nodes, and render output nodes.
+1. A collection of basic Python scripts accessible via right-clicking on nodes.
+2. Includes scripts for creating null output nodes, object merge and output nodes, and render output nodes.
 </sup>
 
 **<sup>Video Demo :</sup>**
