@@ -1,10 +1,10 @@
-<sup>#### Enter The VFX (EFX) Tools for Houdini</sup>
+#### Enter The VFX (EFX) Tools for Houdini
 
 <sup>This repository contains a collection of Python tools, shelf toolbars, and utility scripts designed for FX artists working in Houdini. These tools aim to streamline tasks and enhance the user experience within the Houdini environment.</sup>
 
 ---
 
-<sup>#### Setup Library</sup>
+#### Setup Library
 
 <sup>1. Provides a user interface (UI) for saving and importing Houdini setups or collections of nodes to disk for quick access.</sup>  
 <sup>2. The UI allows users to create descriptions, previews, and snapshots for a quick overview.</sup>  
@@ -16,7 +16,7 @@
 
 ---
 
-<sup>#### Out Tools</sup>
+#### Out Tools
 
 <sup>1. A collection of basic Python scripts accessible via right-clicking on nodes.</sup>  
 <sup>2. Includes scripts for creating null output nodes, object merge and output nodes, and render output nodes.</sup>
@@ -25,7 +25,7 @@
 
 ---
 
-<sup>#### Installation</sup>
+#### Installation
 
 <sup>To get started with these EFX tools, follow these steps:</sup>
 
@@ -36,6 +36,6 @@
 
 ---
 
-<sup>#### Contributing</sup>
+#### Contributing
 
 <sup>Contributions to this project are welcome! If you have ideas for additional features, improvements, or bug fixes, feel free to submit a pull request. Please ensure that any contributions align with the goals and scope of this project.</sup>
