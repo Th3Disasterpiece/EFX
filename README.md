@@ -30,14 +30,19 @@ Video Demo
 ---
 
 Installation
+
 <sup>
 To get started with these EFX tools, follow these steps:
+
 1. Clone or download this repository to your local machine.
 2. Ensure you have the necessary dependencies installed, such as PySide2, and are using Houdini 20 (python3.10).
 3. Copy the "EFX.json" file from the downloaded repository to the "packages" directory in your Houdini installation folder.
 4. Open the "EFX.json" file and replace the value of the "EFX" key with the path to the downloaded repository on your machine.
+
 </sup>
 ---
 
 Contributing
+<sup>
 Contributions to this project are welcome! If you have ideas for additional features, improvements, or bug fixes, feel free to submit a pull request. Please ensure that any contributions align with the goals and scope of this project.
+</sup>
