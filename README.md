@@ -1,4 +1,4 @@
-<sup>**Enter The VFX (EFX) Tools for Houdini**</sup>
+### <sup>**Enter The VFX (EFX) Tools for Houdini**</sup>
 
 <sup>This repository contains a collection of Python tools, shelf toolbars, and utility scripts designed for FX artists working in Houdini. These tools aim to streamline tasks and enhance the user experience within the Houdini environment.</sup>
 
@@ -11,11 +11,9 @@
 - Helps build a personalized library of commonly used systems, examples, VEX and Python snippets, and setups.
 </sup>
 
-**<sup>EFX Shelf Tool</sup>**
-
 <img src="https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/snipUIShelftool_snapshot.png" alt="SnipUI Shelftool" width="600">
 
-**<sup>Setup Library</sup>**
+**<sup>Setup Library UI</sup>**
 
 <img src="https://github.com/Th3Disasterpiece/EFX/blob/a66d58fcd3849bd4b44574d059d21d4e3335d971/config/thumbnails/setupLib.gif" alt="Setup Library" width="600">
 
@@ -27,9 +25,9 @@
 - Includes scripts for creating null output nodes, object merge and output nodes, and render output nodes.
 </sup>
 
-**<sup>Video Demo</sup>**
+**<sup>Video Demo :</sup>**
 
-[<img src="https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/out_tools_snapshot.png" width="200">](https://vimeo.com/653346110)
+[<img src="https://github.com/Th3Disasterpiece/EFX/blob/master/config/thumbnails/out_tools_snapshot.png" width="300">](https://vimeo.com/653346110)
 
 ---
 
