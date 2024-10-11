@@ -10,7 +10,6 @@ import subprocess
 import asyncio
 import traceback
 import importlib
-import time
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
 from functools import partial
@@ -34,8 +33,7 @@ MAX_PREVIEW_SIZE = QtCore.QSize(400, 300)
 FLIPBOOK_FRAME_RATE = 24  # fps
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
-# logging.getLogger().setLevel(logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
@@ -485,7 +483,6 @@ class MyShelfToolUI(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowFlags(self.windowFlags() | QtCore.Qt.WindowStaysOnTopHint)
-        logger.debug("Starting MyShelfToolUI initialization")
 
         # Initialize variables
         self.base_path = Path(hou.getenv("EFX", ""))
@@ -505,9 +502,7 @@ class MyShelfToolUI(QtWidgets.QWidget):
         self.file_groups = {}
         self.json_cache = {}
         self.preview_cache = {}
-        # self.thread_pool = ThreadPoolExecutor(max_workers=4)
-        self.thread_pool = ThreadPoolExecutor(max_workers=os.cpu_count())
-
+        self.thread_pool = ThreadPoolExecutor(max_workers=4)
 
         self.progress_dialog = None
         self.close_timer = QTimer(self)
@@ -528,16 +523,12 @@ class MyShelfToolUI(QtWidgets.QWidget):
         self.setup_ui()
         self.setup_file_list_widget()
         self.connect_signals()
-        logger.debug("About to call load_settings")
         self.load_settings()
         self.load_json_data()
         self.update_file_list()
-        self.verbose_preview_logging = False
-
 
         MyShelfToolUI.instances.append(self)
         # log_widget_hierarchy(self)
-        logger.debug("Finished MyShelfToolUI initialization")
 
 
     # def log_widget_hierarchy(widget, level=0):
@@ -585,22 +576,23 @@ class MyShelfToolUI(QtWidgets.QWidget):
         self.raise_()
 
     def setup_ui(self):
-        self.setWindowTitle("My Setup Library")
+        self.setWindowTitle("My Snip Library")
         self.setMinimumSize(1200, 800)
 
-        main_layout = QtWidgets.QHBoxLayout(self)  # Change to QHBoxLayout
+        main_layout = QtWidgets.QVBoxLayout(self)
         
-        # Create left layout (file list)
+        content_layout = QtWidgets.QHBoxLayout()
         left_layout = self.create_left_layout()
-        
-        # Create right layout (preview)
         right_layout = self.create_right_layout()
 
-        # Add layouts to main layout
-        main_layout.addLayout(left_layout, 2)
-        main_layout.addLayout(right_layout, 1)
+        content_layout.addLayout(left_layout, 2)
+        content_layout.addLayout(right_layout, 1)
 
-        # Remove the content_layout and nested layouts
+        main_layout.addLayout(content_layout)
+
+        # Add a new button for creating a new snip
+        self.new_snip_button = QtWidgets.QPushButton("New")
+        self.new_snip_button.clicked.connect(self.open_write_snip_ui)
 
         # # Add the new button to the layout
         # button_layout = QtWidgets.QHBoxLayout()
@@ -1426,39 +1418,12 @@ class MyShelfToolUI(QtWidgets.QWidget):
             group_item.setHidden(not group_visible)
 
     def update_preview(self, file_path=None):
-        try:
-            # Get the current item from your file list widget
-            current_item = self.file_list_widget.currentItem()  # Assuming 'file_list_widget' is the name of your tree widget
-            if current_item and current_item.childCount() == 0:  # Ensure it's a file item, not a group
-                # Assuming the file path is stored as item data
-                file_path = current_item.data(0, Qt.UserRole)
-                
-                if file_path:
-                    try:
-                        loop = asyncio.get_event_loop()
-                    except RuntimeError:
-                        # If there's no event loop, create a new one
-                        loop = asyncio.new_event_loop()
-                        asyncio.set_event_loop(loop)
+        if self.current_task and not self.current_task.done():
+            self.current_task.cancel()
 
-                    if loop.is_running():
-                        # If the loop is running, create a task
-                        self.current_task = asyncio.create_task(self._update_preview(file_path))
-                    else:
-                        # If the loop isn't running, run the coroutine directly
-                        self.current_task = loop.run_until_complete(self._update_preview(file_path))
-        except Exception as e:
-            logger.error(f"Error in update_preview: {str(e)}")
-            logger.error(traceback.format_exc())
-
-    def get_current_file_path(self):
-        # Implement this method based on how you're storing and accessing the current file path
-        # For example:
-        # return self.current_file_path
-        # or
-        # return self.some_list_widget.currentItem().data(Qt.UserRole)
-        pass  # Replace this with your actual implementation
-
+        self.current_task = asyncio.create_task(self._update_preview(file_path))
+        # Ensure the file list widget keeps focus after starting the update
+        QtCore.QTimer.singleShot(0, self.file_list_widget.setFocus)
 
     def restore_selection(self, item):
         self.file_list_widget.setCurrentItem(item)
@@ -1466,7 +1431,6 @@ class MyShelfToolUI(QtWidgets.QWidget):
         self.file_list_widget.setFocus()
 
     async def _update_preview(self, file_path=None):
-        start_time = time.time()
         logger.debug("_update_preview called")
         if hasattr(self, 'toggle_preview_checkbox') and hasattr(self, 'preview_visible'):
             logger.debug(f"Preview checkbox checked: {self.toggle_preview_checkbox.isChecked()}, Preview visible: {self.preview_visible}")
@@ -1483,30 +1447,19 @@ class MyShelfToolUI(QtWidgets.QWidget):
                 if file_path:
                     logger.debug(f"Selected file: {file_path}")
                     
-                    # Convert file_path to a Path object
-                    file_path = Path(file_path)
-                    
                     # Always read fresh data from json_data
                     json_data = next((item for item in self.json_data if item['File Name'] == file_path.stem), None)
                     
                     logger.debug(f"JSON data: {json_data}")
                     
                     if json_data:
-                        # Temporarily reduce logging level before loading preview
-                        original_level = logger.level
-                        logger.setLevel(logging.WARNING)
-
-                        try:
-                            self.format_preview_text(json_data)
-                            self.description_widget.setReadOnly(True)
-                            self.description_edit_button.setText("Edit")
-                            self.description_save_button.setEnabled(False)
-                            
-                            # Use QTimer to allow UI to update
-                            QtCore.QTimer.singleShot(0, lambda: self.load_preview_assets(json_data))
-                        finally:
-                            # Restore original logging level
-                            logger.setLevel(original_level)
+                        self.format_preview_text(json_data)
+                        self.description_widget.setReadOnly(True)
+                        self.description_edit_button.setText("Edit")
+                        self.description_save_button.setEnabled(False)
+                        
+                        # Use QTimer to allow UI to update
+                        QtCore.QTimer.singleShot(0, lambda: self.load_preview_assets(json_data))
                     else:
                         logger.warning(f"No JSON data found for {file_path.stem}")
                         self.description_widget.setPlainText("No additional information available for this file.")
@@ -1522,8 +1475,6 @@ class MyShelfToolUI(QtWidgets.QWidget):
 
         # Ensure the file list widget keeps focus after the update
         QtCore.QTimer.singleShot(0, self.file_list_widget.setFocus)
-        end_time = time.time()
-        print(f"Total preview update took {end_time - start_time:.2f} seconds")
 
     def restore_list_state(self):
         self.file_list_widget.setFocus()
@@ -1993,7 +1944,6 @@ class MyShelfToolUI(QtWidgets.QWidget):
 
     def load_settings(self):
         # Restore window geometry
-        logger.debug("Starting load_settings")
         if self.settings.contains("geometry"):
             self.restoreGeometry(self.settings.value("geometry"))
 
@@ -2029,14 +1979,11 @@ class MyShelfToolUI(QtWidgets.QWidget):
         # Restore preview visibility
         preview_visible = self.settings.value("preview_visible", True, type=bool)
         self.toggle_preview_checkbox.setChecked(preview_visible)
-        logger.debug("About to call toggle_preview")
         self.toggle_preview(QtCore.Qt.Checked if preview_visible else QtCore.Qt.Unchecked)
-        logger.debug("Finished load_settings")
 
         # Restore show dialogs preference
         show_dialogs = self.settings.value("show_dialogs", True, type=bool)
         self.show_dialogs_checkbox.setChecked(show_dialogs)
-
 
     def update_file_list_without_progress(self):
         selected_user = self.user_combo.currentText() if self.user_checkbox.isChecked() else None
@@ -2993,37 +2940,22 @@ class MyShelfToolUI(QtWidgets.QWidget):
         # Connect the snip_created signal to update the file list
         hou.session.write_snip_ui_instance.snip_created.connect(self.update_file_list)
 
-
 def show_my_shelf_tool_ui():
     try:
         logger.info("Initializing MyShelfToolUI")
         window = MyShelfToolUI()
+        
         logger.info("Setting up UI components")
-        # window.setup_ui()
+        window.setup_ui()
+        
+        window = MyShelfToolUI()
         window.show()
         return window
+
     except Exception as e:
         logger.error(f"Error in show_my_shelf_tool_ui: {str(e)}")
         logger.error(traceback.format_exc())
         print(f"Error opening UI: {str(e)}")
-        return None
-    
-# def show_my_shelf_tool_ui():
-#     try:
-#         logger.info("Initializing MyShelfToolUI")
-#         window = MyShelfToolUI()
-        
-#         logger.info("Setting up UI components")
-#         window.setup_ui()
-        
-#         window = MyShelfToolUI()
-#         window.show()
-#         return window
-
-#     except Exception as e:
-#         logger.error(f"Error in show_my_shelf_tool_ui: {str(e)}")
-#         logger.error(traceback.format_exc())
-#         print(f"Error opening UI: {str(e)}")
 
 
 # def show_my_shelf_tool_ui():
