@@ -53,46 +53,66 @@ except Exception as e:
 
 
 class FileManager:
-    def __init__(self, base_path: str):
+    def __init__(self, base_path: Path):
         self.base_path = Path(base_path)
+        self.ensure_base_directories()
+
+    def ensure_base_directories(self):
+        """Ensure base directories exist."""
+        try:
+            pyDump_path = self.base_path / 'pyDump'
+            pyDump_path.mkdir(parents=True, exist_ok=True)
+            
+            # Create default user directory if no users exist
+            if not any(pyDump_path.iterdir()):
+                default_user = os.getenv('USER', 'default')
+                (pyDump_path / default_user).mkdir(exist_ok=True)
+                
+        except Exception as e:
+            logger.error(f"Error ensuring base directories: {str(e)}", exc_info=True)
+            raise
 
     def get_users(self) -> List[str]:
-        pyDump_path = self.base_path / 'pyDump'
-        if pyDump_path.exists():
-            return [d.name for d in pyDump_path.iterdir() if d.is_dir()]
-        logger.warning(f"pyDump directory not found at {pyDump_path}")
-        return [hou.getenv("USER")]
+        """Get list of users with better error handling."""
+        try:
+            pyDump_path = self.base_path / 'pyDump'
+            if not pyDump_path.exists():
+                pyDump_path.mkdir(parents=True)
+                default_user = os.getenv('USER', 'default')
+                (pyDump_path / default_user).mkdir()
+                return [default_user]
+            
+            users = [d.name for d in pyDump_path.iterdir() if d.is_dir()]
+            return users if users else [os.getenv('USER', 'default')]
+            
+        except Exception as e:
+            logger.error(f"Error getting users: {str(e)}", exc_info=True)
+            return [os.getenv('USER', 'default')]
 
     def load_json_data(self):
         user = self.user_combo.currentText()
         master_json_path = Path(self.base_path) / 'pyDump' / user / 'Snips' / 'descriptions' / 'master.json'
-        
+        logger.debug(f"Loading JSON data from: {master_json_path}")
         try:
-            # Create directory structure if it doesn't exist
-            master_json_path.parent.mkdir(parents=True, exist_ok=True)
-            
-            # Create empty master.json if it doesn't exist
-            if not master_json_path.exists():
-                with master_json_path.open('w') as f:
-                    json.dump([], f)
-            
             with master_json_path.open('r') as f:
                 self.json_data = json.load(f)
-                
             if not isinstance(self.json_data, list):
-                logger.warning("JSON data is not a list, initializing empty list")
-                self.json_data = []
-                
+                raise ValueError("JSON data is not a list")
             logger.info(f"Loaded JSON data for user {user}: {len(self.json_data)} entries")
+            logger.debug(f"First few entries: {self.json_data[:3]}")
         except Exception as e:
             logger.error(f"Failed to load JSON data: {e}")
             self.json_data = []
 
     def get_preview_base_path(self, user: str) -> Path:
-        preview_path = self.base_path / 'pyDump' / user / 'Snips' / 'preview'
-        if not preview_path.exists():
-            logger.warning(f"Warning: Preview path does not exist: {preview_path}")
-        return preview_path
+        """Get preview base path with better error handling."""
+        try:
+            preview_path = self.base_path / 'pyDump' / user / 'Snips' / 'preview'
+            preview_path.mkdir(parents=True, exist_ok=True)
+            return preview_path
+        except Exception as e:
+            logger.error(f"Error getting preview base path: {str(e)}", exc_info=True)
+            raise
 
 class PreviewManager:
     def __init__(self, max_preview_size: QtCore.QSize):
@@ -391,8 +411,59 @@ class LargePreviewWindow(QtWidgets.QDialog):
         self.settings.setValue("geometry", self.saveGeometry())
 
     def load_settings(self):
-        if self.settings.contains("geometry"):
-            self.restoreGeometry(self.settings.value("geometry"))
+        try:
+            # Restore window geometry
+            logger.debug("Starting load_settings")
+            if self.settings.contains("geometry"):
+                self.restoreGeometry(self.settings.value("geometry"))
+
+            # Restore user filter
+            user_filter_enabled = self.settings.value("user_filter_enabled", True, type=bool)
+            self.user_checkbox.setChecked(user_filter_enabled)
+            saved_user = self.settings.value("selected_user", "")
+            if saved_user and saved_user in self.file_manager.get_users():
+                self.user_combo.setCurrentText(saved_user)
+
+            # Restore group filter
+            group_filter_enabled = self.settings.value("group_filter_enabled", True, type=bool)
+            self.group_checkbox.setChecked(group_filter_enabled)
+            saved_group = self.settings.value("selected_group", "")
+            if saved_group:
+                index = self.group_combo.findText(saved_group)
+                if index >= 0:
+                    self.group_combo.setCurrentIndex(index)
+
+            # Restore source filter
+            source_filter_enabled = self.settings.value("source_filter_enabled", True, type=bool)
+            self.source_checkbox.setChecked(source_filter_enabled)
+            saved_sources = self.settings.value("selected_sources", [])
+            if saved_sources:
+                self.populate_source_filter()  # Make sure sources are populated before setting checks
+                model = self.source_filter_combo.model()
+                if model:
+                    for i in range(model.rowCount()):
+                        item = model.item(i)
+                        if item:
+                            item.setCheckState(QtCore.Qt.Checked if item.text() in saved_sources else QtCore.Qt.Unchecked)
+            self.update_source_filter_text()
+
+            # Restore search filter
+            saved_filter = self.settings.value("filter_text", "")
+            self.filter_line_edit.setText(saved_filter)
+
+            # Restore preview visibility
+            preview_visible = self.settings.value("preview_visible", True, type=bool)
+            self.toggle_preview_checkbox.setChecked(preview_visible)
+            self.toggle_preview(QtCore.Qt.Checked if preview_visible else QtCore.Qt.Unchecked)
+
+            # Restore show dialogs preference
+            show_dialogs = self.settings.value("show_dialogs", True, type=bool)
+            self.show_dialogs_checkbox.setChecked(show_dialogs)
+
+            logger.debug("Finished load_settings")
+        except Exception as e:
+            logger.error(f"Error loading settings: {e}", exc_info=True)
+            # Don't raise the exception, just log it and continue with defaults
 
     def closeEvent(self, event):
         self.timer.stop()
@@ -479,136 +550,207 @@ class NameEditorDelegate(QtWidgets.QStyledItemDelegate):
         self.commitData.emit(editor)
         self.closeEditor.emit(editor)
 
-class MyShelfToolUI(QtWidgets.QWidget):
-    instances = []
-
-    @classmethod
-    def close_existing_windows(cls):
-        for instance in cls.instances:
-            try:
-                instance.close()
-                instance.deleteLater()
-            except:
-                pass
-        cls.instances.clear()
-
+class MyShelfToolUI(QtWidgets.QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowFlags(self.windowFlags() | QtCore.Qt.WindowStaysOnTopHint)
-        logger.debug("Starting MyShelfToolUI initialization")
-
-        # Initialize variables
-        self.base_path = Path(hou.getenv("EFX", ""))
-        if not self.base_path.exists():
-            raise ValueError("EFX environment variable is not set or invalid")
-
-        self.file_manager = FileManager(str(self.base_path))
-        self.preview_manager = PreviewManager(MAX_PREVIEW_SIZE)
-
-        self.preview_visible = True  # or False, depending on your default preference
-        self.flipbook_timer = QtCore.QTimer(self)
-        self.flipbook_timer.timeout.connect(self.update_flipbook_frame)
-
-        self.settings = QSettings("YourCompany", "SnipLibraryUI")
-
-        self.current_snapshot_path = None
-        self.file_groups = {}
-        self.json_cache = {}
-        self.preview_cache = {}
-        # self.thread_pool = ThreadPoolExecutor(max_workers=4)
-        self.thread_pool = ThreadPoolExecutor(max_workers=os.cpu_count())
-
-
-        self.progress_dialog = None
-        self.close_timer = QTimer(self)
-        self.close_timer.setSingleShot(True)
-        self.close_timer.timeout.connect(self.force_close_progress_dialog)
-
-        self.cache_timer = QtCore.QTimer(self)
-        self.cache_timer.timeout.connect(self.clear_cache)
-        self.cache_timer.start(300000)  # Clear cache every 5 minutes (300,000 ms)
-
-        self.update_preview_timer = QtCore.QTimer()
-        self.update_preview_timer.setSingleShot(True)
-        self.update_preview_timer.timeout.connect(self._update_preview)
-        self.current_file_path = None
-        self.preview_semaphore = asyncio.Semaphore(1)
-        self.current_task = None
-
-        self.setup_ui()
-        self.setup_file_list_widget()
-        self.connect_signals()
-        logger.debug("About to call load_settings")
-        self.load_settings()
-        self.load_json_data()
-        self.update_file_list()
-        self.verbose_preview_logging = False
-
-
-        MyShelfToolUI.instances.append(self)
-        # log_widget_hierarchy(self)
-        logger.debug("Finished MyShelfToolUI initialization")
-
-
-    # def log_widget_hierarchy(widget, level=0):
-    #     logger.debug(f"{'  ' * level}{widget.__class__.__name__}: {widget.objectName()}")
-    #     for child in widget.children():
-    #         if isinstance(child, QtWidgets.QWidget):
-    #             log_widget_hierarchy(child, level + 1)
-
-
-    def clear_cache(self):
-        self.json_cache.clear()
-        self.preview_cache.clear()
-        logger.info("Application cache automatically cleared")
-
-    def show_progress_dialog(self, title, message, maximum):
-        self.progress_dialog = QProgressDialog(message, "Cancel", 0, maximum, self)
-        self.progress_dialog.setWindowTitle(title)
-        self.progress_dialog.setWindowModality(QtCore.Qt.WindowModal)
-        self.progress_dialog.setMinimumDuration(0)
-        self.progress_dialog.setValue(0)
-        self.progress_dialog.show()
-        QApplication.processEvents()
         
-    def update_progress(self, value):
-        if self.progress_dialog:
-            self.progress_dialog.setValue(value)
-            QApplication.processEvents()
+        try:
+            logger.info("Starting UI initialization...")
+            
+            # Set window properties
+            self.setWindowTitle("Snip Library")
+            self.setMinimumSize(1200, 800)
+            
+            # Initialize QSettings
+            logger.debug("Initializing QSettings...")
+            self.settings = QtCore.QSettings("EFX", "SnipUI")
+            
+            # Initialize basic attributes
+            logger.debug("Initializing basic attributes...")
+            self.base_path = Path(os.getenv('HOME')) / 'Documents' / 'EFX'
+            self.preview_cache = {}
+            self.json_cache = {}
+            self.current_task = None
+            self.thread_pool = ThreadPoolExecutor(max_workers=4)
+            
+            # Initialize preview-related attributes
+            logger.debug("Initializing preview attributes...")
+            self.preview_visible = True
+            self.current_snapshot_path = None
+            self.flipbook_timer = QtCore.QTimer()
+            self.flipbook_timer.timeout.connect(self.update_flipbook_frame)
+            
+            # Ensure required directories exist
+            logger.debug("Ensuring directory structure...")
+            self.ensure_directory_structure()
+            
+            # Initialize file manager and load initial data
+            logger.debug("Initializing file manager...")
+            self.file_manager = FileManager(self.base_path)
+            self.json_data = []
+            
+            # Create main layout
+            logger.debug("Creating main layout...")
+            self.main_layout = QtWidgets.QHBoxLayout(self)
+            
+            # Initialize UI components
+            logger.debug("Setting up UI components...")
+            self.setup_ui()
+            
+            # Load settings
+            logger.debug("Loading settings...")
+            self.load_settings()
+            
+            # Initial UI update
+            logger.debug("Updating file list...")
+            self.update_file_list()
+            
+            logger.info("UI initialization completed successfully")
+            
+        except Exception as e:
+            logger.error(f"Error initializing UI: {str(e)}", exc_info=True)
+            raise
 
-    def close_progress_dialog(self):
-        if self.progress_dialog:
-            self.progress_dialog.close()
-            self.progress_dialog = None
+    def ensure_directory_structure(self):
+        """Ensure all required directories exist."""
+        try:
+            # Create base directories
+            pyDump_path = self.base_path / 'pyDump'
+            pyDump_path.mkdir(parents=True, exist_ok=True)
+            
+            # Create default user directory if none exist
+            default_user = os.getenv('USER', 'default')
+            user_path = pyDump_path / default_user
+            user_path.mkdir(exist_ok=True)
+            
+            # Create required subdirectories
+            snips_path = user_path / 'Snips'
+            snips_path.mkdir(exist_ok=True)
+            
+            preview_path = snips_path / 'preview'
+            preview_path.mkdir(exist_ok=True)
+            
+            (preview_path / 'flipbook').mkdir(exist_ok=True)
+            (preview_path / 'snapshot').mkdir(exist_ok=True)
+            
+            descriptions_path = snips_path / 'descriptions'
+            descriptions_path.mkdir(exist_ok=True)
+            
+            # Ensure master.json exists
+            master_json_path = descriptions_path / 'master.json'
+            if not master_json_path.exists():
+                with master_json_path.open('w') as f:
+                    json.dump([], f)
+            
+            logger.info("Directory structure verified and created if needed")
+            
+        except Exception as e:
+            logger.error(f"Error ensuring directory structure: {str(e)}", exc_info=True)
+            raise
 
-    def force_close_progress_dialog(self):
-        logger.debug("Forcing progress dialog closure")
-        if self.progress_dialog:
-            self.progress_dialog.close()
-            self.progress_dialog.deleteLater()
-            self.progress_dialog = None
-            logger.debug("Progress dialog forcibly closed")
-        else:
-            logger.warning("No progress dialog to close")
-        QApplication.processEvents()
-        self.activateWindow()
-        self.raise_()
+    def load_json_data(self):
+        """Load JSON data with better error handling."""
+        try:
+            user = self.user_combo.currentText()
+            master_json_path = Path(self.base_path) / 'pyDump' / user / 'Snips' / 'descriptions' / 'master.json'
+            
+            if not master_json_path.exists():
+                logger.warning(f"master.json not found at {master_json_path}. Creating new file.")
+                master_json_path.parent.mkdir(parents=True, exist_ok=True)
+                with master_json_path.open('w') as f:
+                    json.dump([], f)
+                self.json_data = []
+                return
+            
+            try:
+                with master_json_path.open('r') as f:
+                    data = json.load(f)
+                    if not isinstance(data, list):
+                        logger.warning("JSON data is not a list. Resetting to empty list.")
+                        self.json_data = []
+                    else:
+                        self.json_data = data
+            except json.JSONDecodeError:
+                logger.warning("Invalid JSON file. Resetting to empty list.")
+                self.json_data = []
+                with master_json_path.open('w') as f:
+                    json.dump([], f)
+            
+            logger.info(f"Loaded JSON data for user {user}: {len(self.json_data)} entries")
+            
+        except Exception as e:
+            logger.error(f"Error loading JSON data: {str(e)}", exc_info=True)
+            self.json_data = []
+
+    def update_file_list(self):
+        """Update file list with better error handling."""
+        try:
+            selected_user = self.user_combo.currentText() if self.user_checkbox.isChecked() else None
+            if not selected_user:
+                # If no user is selected, use the current system user
+                selected_user = os.getenv('USER', 'default')
+            
+            selected_group = self.group_combo.currentText() if self.group_checkbox.isChecked() else None
+            selected_sources = self.get_selected_sources() if self.source_checkbox.isChecked() else None
+
+            self.file_list_widget.clear()
+            
+            category_path = self.base_path / 'pyDump' / selected_user / 'Snips'
+            if not category_path.exists():
+                logger.warning(f"Category path does not exist: {category_path}")
+                category_path.mkdir(parents=True, exist_ok=True)
+                return
+            
+            for file_path in category_path.glob('*'):
+                if file_path.suffix in SUPPORTED_EXTENSIONS:
+                    self.populate_file_item(file_path, selected_group, selected_sources)
+            
+            logger.info(f"Updated file list for user {selected_user}")
+            
+        except Exception as e:
+            logger.error(f"Error updating file list: {str(e)}", exc_info=True)
+            self.show_error_dialog("Update Failed", f"Failed to update file list: {str(e)}")
 
     def setup_ui(self):
-        self.setWindowTitle("My Setup Library")
-        self.setMinimumSize(1200, 800)
+        try:
+            logger.debug("Starting UI setup...")
+            
+            # Initialize UI elements
+            self.user_checkbox = QtWidgets.QCheckBox("Filter by User")
+            self.user_combo = QtWidgets.QComboBox()
+            self.group_checkbox = QtWidgets.QCheckBox("Filter by Group")
+            self.group_combo = QtWidgets.QComboBox()
+            self.source_checkbox = QtWidgets.QCheckBox("Filter by Source")
+            self.source_filter_combo = QtWidgets.QComboBox()
+            self.filter_line_edit = QtWidgets.QLineEdit()
+            self.toggle_preview_checkbox = QtWidgets.QCheckBox("Show Preview")
+            self.show_dialogs_checkbox = QtWidgets.QCheckBox("Show Dialogs")
+            self.file_list_widget = QtWidgets.QTreeWidget()
 
-        main_layout = QtWidgets.QHBoxLayout(self)  # Change to QHBoxLayout
-        
-        # Create left layout (file list)
-        left_layout = self.create_left_layout()
-        
-        # Create right layout (preview)
-        right_layout = self.create_right_layout()
+            self.setWindowTitle("My Setup Library")
+            self.setMinimumSize(1200, 800)
 
-        # Add layouts to main layout
-        main_layout.addLayout(left_layout, 2)
-        main_layout.addLayout(right_layout, 1)
+            main_layout = QtWidgets.QHBoxLayout(self)  # Change to QHBoxLayout
+            
+            # Create left layout (file list)
+            left_layout = self.create_left_layout()
+            
+            # Create right layout (preview)
+            right_layout = self.create_right_layout()
+
+            # Add layouts to main layout
+            main_layout.addLayout(left_layout, 2)
+            main_layout.addLayout(right_layout, 1)
+            
+            # Connect signals
+            logger.debug("Connecting signals...")
+            self.connect_signals()
+            
+            logger.debug("UI setup completed")
+            
+        except Exception as e:
+            logger.error(f"Error in setup_ui: {str(e)}", exc_info=True)
+            raise
 
         # Remove the content_layout and nested layouts
 
@@ -656,101 +798,44 @@ class MyShelfToolUI(QtWidgets.QWidget):
         self.file_list_widget.repaint()
 
     def create_left_layout(self):
-        layout = QtWidgets.QVBoxLayout()
-
-        # Create a layout for filters
-        filter_layout = QtWidgets.QHBoxLayout()
-
-        # User filter
-        user_layout = QtWidgets.QHBoxLayout()
-        self.user_checkbox = QtWidgets.QCheckBox("User:")
-        self.user_checkbox.setChecked(True)
-        self.user_checkbox.stateChanged.connect(self.on_user_filter_toggled)
-        self.user_combo = QtWidgets.QComboBox()
-        self.populate_user_combo()
-        self.user_combo.currentTextChanged.connect(self.on_user_changed)
-        user_layout.addWidget(self.user_checkbox)
-        user_layout.addWidget(self.user_combo)
-        filter_layout.addLayout(user_layout)
-
-        # Group by filter
-        group_layout = QtWidgets.QHBoxLayout()
-        self.group_checkbox = QtWidgets.QCheckBox("Group by:")
-        self.group_checkbox.setChecked(True)
-        self.group_checkbox.stateChanged.connect(self.on_group_filter_toggled)
-        self.group_combo = QtWidgets.QComboBox()
-        self.group_combo.addItems(["Type", "Context", "Source"])
-        self.group_combo.setCurrentText("Type")  # Set default grouping
-        self.group_combo.currentTextChanged.connect(self.on_group_changed)
-        group_layout.addWidget(self.group_checkbox)
-        group_layout.addWidget(self.group_combo)
-        filter_layout.addLayout(group_layout)
-
-        # Source filter
-        source_layout = QtWidgets.QHBoxLayout()
-        self.source_checkbox = QtWidgets.QCheckBox("Source:")
-        self.source_checkbox.setChecked(True)
-        self.source_checkbox.stateChanged.connect(self.on_source_filter_toggled)
-        self.source_filter_combo = CheckableComboBox()
-        self.source_filter_combo.setEditable(True)
-        self.source_filter_combo.lineEdit().setReadOnly(True)
-        self.source_filter_combo.lineEdit().setPlaceholderText("Select Sources")
-        self.populate_source_filter()
-        self.source_filter_combo.model().dataChanged.connect(self.on_source_filter_changed)
-        source_layout.addWidget(self.source_checkbox)
-        source_layout.addWidget(self.source_filter_combo)
-        filter_layout.addLayout(source_layout)
-
-        # Add filter layout to main layout
-        layout.addLayout(filter_layout)
-
-        # Add some spacing
-        layout.addSpacing(10)
-
-        # Add filter files search bar
-        search_layout = QtWidgets.QHBoxLayout()
-        search_label = QtWidgets.QLabel("Filter Files:")
-        self.filter_line_edit = QtWidgets.QLineEdit()
-        self.filter_line_edit.setPlaceholderText("Enter search term...")
-        self.filter_line_edit.textChanged.connect(self.filter_files)
-        search_layout.addWidget(search_label)
-        search_layout.addWidget(self.filter_line_edit)
-
-        layout.addLayout(search_layout)
-
-        self.toggle_preview_checkbox = QtWidgets.QCheckBox("Enable Preview", checked=True)
-        layout.addWidget(self.toggle_preview_checkbox)
-
-        # Add the file list widget
-        self.file_list_widget = QtWidgets.QTreeWidget(self)
-        self.file_list_widget.setHeaderLabels(["Context", "Type", "Name", "Source", "Version", "Date Modified", "Size"])
-        layout.addWidget(self.file_list_widget)
-
-        # Create buttons
-        button_layout = QtWidgets.QHBoxLayout()
-        self.load_button = QtWidgets.QPushButton("Load")
-        self.load_button.clicked.connect(self.load_action)
-        button_layout.addWidget(self.load_button)
-
-        self.delete_button = QtWidgets.QPushButton("Delete")
-        self.delete_button.clicked.connect(self.delete_selected_file)
-        button_layout.addWidget(self.delete_button)
-
-        self.new_snip_button = QtWidgets.QPushButton("New")
-        self.new_snip_button.clicked.connect(self.open_write_snip_ui)
-        button_layout.addWidget(self.new_snip_button)
-
-        self.refresh_button = QtWidgets.QPushButton("Refresh")
-        self.refresh_button.clicked.connect(self.refresh_ui)
-        button_layout.addWidget(self.refresh_button)
-
-        self.close_button = QtWidgets.QPushButton("Close")
-        self.close_button.clicked.connect(self.close)
-        button_layout.addWidget(self.close_button)
-
-        layout.addLayout(button_layout)
-
-        return layout
+        try:
+            logger.debug("Creating left layout...")
+            layout = QtWidgets.QVBoxLayout()
+            
+            # Initialize UI elements
+            self.user_checkbox = QtWidgets.QCheckBox("Filter by User")
+            self.user_combo = QtWidgets.QComboBox()
+            self.group_checkbox = QtWidgets.QCheckBox("Filter by Group")
+            self.group_combo = QtWidgets.QComboBox()
+            self.source_checkbox = QtWidgets.QCheckBox("Filter by Source")
+            self.source_filter_combo = CheckableComboBox()
+            self.filter_line_edit = QtWidgets.QLineEdit()
+            self.toggle_preview_checkbox = QtWidgets.QCheckBox("Show Preview")
+            self.show_dialogs_checkbox = QtWidgets.QCheckBox("Show Dialogs")
+            self.file_list_widget = QtWidgets.QTreeWidget()
+            
+            # Set up filter section
+            filter_layout = self.create_filter_layout()
+            layout.addLayout(filter_layout)
+            
+            # Add search bar
+            search_layout = self.create_search_layout()
+            layout.addLayout(search_layout)
+            
+            # Add file list
+            self.setup_file_list_widget()
+            layout.addWidget(self.file_list_widget)
+            
+            # Add buttons
+            button_layout = self.create_button_layout()
+            layout.addLayout(button_layout)
+            
+            logger.debug("Left layout created successfully")
+            return layout
+            
+        except Exception as e:
+            logger.error(f"Error creating left layout: {str(e)}", exc_info=True)
+            raise
 
     def edit_selected_item_name(self):
         selected_items = self.file_list_widget.selectedItems()
@@ -783,114 +868,29 @@ class MyShelfToolUI(QtWidgets.QWidget):
             self.on_item_changed(selected_item, 2)
 
     def create_right_layout(self):
-        layout = QtWidgets.QVBoxLayout()
-
-        self.description_label = self.create_styled_label("Description")
-        self.description_widget = QtWidgets.QTextEdit()
-        self.description_widget.setReadOnly(True)
-        self.description_widget.setStyleSheet("""
-            QTextEdit[readOnly="true"] {
-                background-color: #2b2b2b;
-                color: #cccccc;
-            }
-            QTextEdit[readOnly="false"] {
-                background-color: #3c3c3c;
-                color: #ffffff;
-            }
-        """)
-
-        # Add edit and save buttons for description
-        description_button_layout = QtWidgets.QHBoxLayout()
-        self.description_edit_button = QtWidgets.QPushButton("Edit")
-        self.description_edit_button.clicked.connect(self.toggle_edit_mode)
-        self.description_save_button = QtWidgets.QPushButton("Save")
-        self.description_save_button.clicked.connect(self.save_description)
-        self.description_save_button.setEnabled(False)
-        description_button_layout.addWidget(self.description_edit_button)
-        description_button_layout.addWidget(self.description_save_button)
-
-        # Flipbook section
-        self.flipbook_label = self.create_styled_label("Flipbook")
-        self.flipbook_preview = ClickableLabel()
-        self.flipbook_preview.clicked.connect(self.show_large_flipbook_preview)
-        self.flipbook_preview.setAlignment(QtCore.Qt.AlignCenter)
-        self.flipbook_preview.setMinimumHeight(350)
-        self.flipbook_preview.setFrameStyle(QtWidgets.QFrame.Box | QtWidgets.QFrame.Sunken)
-        self.flipbook_preview.setStyleSheet("""
-            QLabel {
-                border: 1px solid #555;
-                background-color: #2b2b2b;
-            }
-        """)
-
-        flipbook_button_layout = QtWidgets.QHBoxLayout()
-        self.flipbook_upload_button = QtWidgets.QPushButton("Upload Seq")
-        self.flipbook_upload_button.clicked.connect(self.edit_flipbook)
-        self.flipbook_new_button = QtWidgets.QPushButton("New Flipbook")
-        self.flipbook_new_button.clicked.connect(self.save_flipbook)
-        self.flipbook_delete_button = QtWidgets.QPushButton("Delete")
-        self.flipbook_delete_button.clicked.connect(self.delete_flipbook)
-        flipbook_button_layout.addWidget(self.flipbook_upload_button)
-        flipbook_button_layout.addWidget(self.flipbook_new_button)
-        flipbook_button_layout.addWidget(self.flipbook_delete_button)
-
-        # Create a container for flipbook preview and buttons
-        flipbook_container = QtWidgets.QWidget()
-        flipbook_container_layout = QtWidgets.QVBoxLayout(flipbook_container)
-        flipbook_container_layout.addWidget(self.flipbook_preview)
-        flipbook_container_layout.addLayout(flipbook_button_layout)
-        flipbook_container_layout.setContentsMargins(0, 0, 0, 0)
-
-        # Snapshot section
-        self.snapshot_label = self.create_styled_label("Snapshot")
-        self.snapshot_preview = ClickableLabel()
-        self.snapshot_preview.clicked.connect(self.show_large_snapshot_preview)
-        self.snapshot_preview.setAlignment(QtCore.Qt.AlignCenter)
-        self.snapshot_preview.setMinimumSize(200, 150)
-        self.snapshot_preview.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        self.snapshot_preview.setScaledContents(False)
-        self.snapshot_preview.setFrameStyle(QtWidgets.QFrame.Box | QtWidgets.QFrame.Sunken)
-        self.snapshot_preview.setStyleSheet("""
-            QLabel {
-                border: 1px solid #555;
-                background-color: #2b2b2b;
-            }
-        """)
-
-        # Create a container widget for the snapshot preview
-        snapshot_container = QtWidgets.QWidget()
-        snapshot_container.setMinimumHeight(200)
-        snapshot_container_layout = QtWidgets.QVBoxLayout(snapshot_container)
-        snapshot_container_layout.addWidget(self.snapshot_preview, alignment=QtCore.Qt.AlignCenter)
-        snapshot_container_layout.setContentsMargins(0, 0, 0, 0)
-
-        snapshot_button_layout = QtWidgets.QHBoxLayout()
-        self.snapshot_edit_button = QtWidgets.QPushButton("Upload Snapshot")
-        self.snapshot_edit_button.clicked.connect(self.edit_snapshot)
-        self.snapshot_save_button = QtWidgets.QPushButton("Take New Snapshot")
-        self.snapshot_save_button.clicked.connect(self.save_snapshot)
-        self.snapshot_delete_button = QtWidgets.QPushButton("Delete")
-        self.snapshot_delete_button.clicked.connect(self.delete_snapshot)
-        snapshot_button_layout.addWidget(self.snapshot_edit_button)
-        snapshot_button_layout.addWidget(self.snapshot_save_button)
-        snapshot_button_layout.addWidget(self.snapshot_delete_button)
-
-        layout.addWidget(self.description_label)
-        layout.addWidget(self.description_widget)
-        layout.addLayout(description_button_layout)
-        layout.addSpacing(20)
-        layout.addWidget(self.flipbook_label)
-        layout.addWidget(flipbook_container)
-        layout.addSpacing(20)
-        layout.addWidget(self.snapshot_label)
-        layout.addWidget(snapshot_container)
-        layout.addLayout(snapshot_button_layout)
-
-        # Add the show dialogs checkbox at the bottom of the right layout
-        layout.addStretch()
-        layout.addWidget(self.setup_show_dialogs_checkbox())
-
-        return layout
+        try:
+            logger.debug("Creating right layout...")
+            layout = QtWidgets.QVBoxLayout()
+            
+            # Add description section
+            self.setup_description_section(layout)
+            
+            # Add flipbook section
+            self.setup_flipbook_section(layout)
+            
+            # Add snapshot section
+            self.setup_snapshot_section(layout)
+            
+            # Add show dialogs checkbox
+            layout.addStretch()
+            layout.addWidget(self.setup_show_dialogs_checkbox())
+            
+            logger.debug("Right layout created successfully")
+            return layout
+            
+        except Exception as e:
+            logger.error(f"Error creating right layout: {str(e)}", exc_info=True)
+            raise
 
     def connect_signals(self):
         self.user_combo.currentTextChanged.connect(self.on_user_changed)
@@ -1264,28 +1264,726 @@ class MyShelfToolUI(QtWidgets.QWidget):
     def populate_user_combo(self):
         users = self.file_manager.get_users()
         self.user_combo.clear()
-        
-        # Check if users is None or empty
-        if not users:
-            logger.warning("No users found. Creating default structure.")
-            # Create default directory structure
-            default_user = hou.getenv("USER") or "default"
-            default_path = self.base_path / 'pyDump' / default_user / 'Snips'
-            default_path.mkdir(parents=True, exist_ok=True)
-            
-            # Create necessary subdirectories
-            (default_path / 'preview' / 'flipbook').mkdir(parents=True, exist_ok=True)
-            (default_path / 'preview' / 'snapshot').mkdir(parents=True, exist_ok=True)
-            (default_path / 'descriptions').mkdir(parents=True, exist_ok=True)
-            
-            # Create empty master.json if it doesn't exist
-            master_json_path = default_path / 'descriptions' / 'master.json'
-            if not master_json_path.exists():
-                with master_json_path.open('w') as f:
-                    json.dump([], f)
-            
-            users = [default_user]
+        self.user_combo.addItems(users)
+        current_user = hou.getenv("USER")
+        if current_user in users:
+            self.user_combo.setCurrentText(current_user)
+        elif users:
+            self.user_combo.setCurrentText(users[0])
 
+    async def update_preview_async(self):
+        selected_items = self.file_list_widget.selectedItems()
+        if selected_items and not selected_items[0].childCount():
+            selected_item = selected_items[0]
+            file_path = Path(selected_item.data(0, QtCore.Qt.UserRole))
+            
+            json_data = await self.load_json_data_async(file_path.stem)
+            if json_data:
+                self.format_preview_text(json_data)
+                await self.load_preview_assets_async(json_data)
+            else:
+                self.clear_preview()
+
+    def on_item_changed(self, item, column):
+        if not item or item.childCount() > 0:  # Ignore group items
+            return
+
+        try:
+            old_full_name = Path(item.data(0, QtCore.Qt.UserRole)).stem
+            parts = old_full_name.split('_')
+            
+            if len(parts) != 5:
+                self.show_error_dialog("Invalid Name Format", "The file name does not follow the expected format.")
+                return
+
+            new_value = item.text(column)
+            formatted_value = self.format_name(new_value)
+
+            new_parts = parts.copy()
+            if column == 0:  # Context
+                new_parts[0] = formatted_value.upper()
+            elif column == 1:  # Type
+                new_parts[1] = formatted_value
+            elif column == 2:  # Name
+                new_parts[2] = formatted_value
+            elif column == 3:  # Source
+                new_parts[3] = formatted_value
+            elif column == 4:  # Version
+                new_parts[4] = formatted_value.lower()
+
+            new_full_name = '_'.join(new_parts)
+            
+            # Only update if the name has actually changed
+            if new_full_name != old_full_name:
+                self.update_item_name(item, new_full_name, column)
+            else:
+                # If no change, just update the displayed text to the formatted version
+                item.setText(column, new_parts[column])
+
+        except Exception as e:
+            self.show_error_dialog("Update Failed", f"An error occurred while updating the item: {str(e)}")
+
+    def update_item_name(self, item, new_full_name, updated_column):
+        old_file_path = Path(item.data(0, QtCore.Qt.UserRole))
+        old_full_name = old_file_path.stem
+        user = self.user_combo.currentText()
+        
+        # Update the file name
+        new_file_path = old_file_path.with_name(f"{new_full_name}{old_file_path.suffix}")
+        try:
+            old_file_path.rename(new_file_path)
+        except Exception as e:
+            self.show_error_dialog("Rename Failed", f"Failed to rename file: {e}")
+            # Revert the name change in the UI
+            old_parts = old_full_name.split('_')
+            item.setText(updated_column, old_parts[updated_column])
+            return
+
+        # Update flipbook directory and image sequence
+        old_flipbook_dir = self.base_path / 'pyDump' / user / 'Snips' / 'preview' / 'flipbook' / old_full_name
+        new_flipbook_dir = self.base_path / 'pyDump' / user / 'Snips' / 'preview' / 'flipbook' / new_full_name
+        if old_flipbook_dir.exists():
+            try:
+                # Rename image sequence files
+                for old_file in old_flipbook_dir.glob(f"{old_full_name}.*"):
+                    frame_number = old_file.stem.split('.')[-1]
+                    new_file_name = f"{new_full_name}.{frame_number}{old_file.suffix}"
+                    old_file.rename(old_flipbook_dir / new_file_name)
+                
+                # Rename the directory
+                old_flipbook_dir.rename(new_flipbook_dir)
+            except Exception as e:
+                self.show_error_dialog("Flipbook Update Failed", f"Failed to update flipbook: {e}")
+
+        # Update snapshot
+        old_snapshot_path = self.base_path / 'pyDump' / user / 'Snips' / 'preview' / 'snapshot' / f"{old_full_name}.png"
+        new_snapshot_path = self.base_path / 'pyDump' / user / 'Snips' / 'preview' / 'snapshot' / f"{new_full_name}.png"
+        if old_snapshot_path.exists():
+            try:
+                old_snapshot_path.rename(new_snapshot_path)
+            except Exception as e:
+                self.show_error_dialog("Snapshot Update Failed", f"Failed to update snapshot: {e}")
+
+        # Update the item's data
+        item.setData(0, QtCore.Qt.UserRole, str(new_file_path))
+
+        self.show_info_dialog("Name Updated", f"Successfully updated the {['Context', 'Type', 'Name', 'Source', 'Version'][updated_column]}")
+        self.refresh_ui()
+
+    def format_name(self, input_string):
+        # Remove special characters and spaces
+        cleaned = re.sub(r'[^a-zA-Z0-9 ]', '', input_string)
+        
+        # Split the string into words
+        words = cleaned.split()
+        
+        # Capitalize the first letter of each word except the first one
+        formatted = words[0].lower() + ''.join(word.capitalize() for word in words[1:])
+        
+        return formatted
+
+    def show_large_flipbook_preview(self):
+        selected_items = self.file_list_widget.selectedItems()
+        if not selected_items or selected_items[0].childCount() > 0:
+            return
+
+        selected_item = selected_items[0]
+        file_path = Path(selected_item.data(0, QtCore.Qt.UserRole))
+        file_name = file_path.stem
+
+        user = self.user_combo.currentText()
+        flipbook_folder = self.base_path / 'pyDump' / user / "Snips" / "preview" / "flipbook" / file_name
+
+        if not flipbook_folder.exists():
+            return
+
+        preview_window = LargePreviewWindow(self)
+        preview_window.set_flipbook(str(flipbook_folder))
+        preview_window.show()
+        preview_window.raise_()  # Bring the window to the front
+        preview_window.activateWindow()  # Activate the window
+
+    def show_large_snapshot_preview(self):
+        selected_items = self.file_list_widget.selectedItems()
+        if not selected_items or selected_items[0].childCount() > 0:
+            return
+
+        selected_item = selected_items[0]
+        file_path = Path(selected_item.data(0, QtCore.Qt.UserRole))
+        file_name = file_path.stem
+
+        user = self.user_combo.currentText()
+        snapshot_path = self.base_path / 'pyDump' / user / "Snips" / "preview" / "snapshot" / f"{file_name}.png"
+
+        if not snapshot_path.exists():
+            return
+
+        preview_window = LargePreviewWindow(self)
+        preview_window.set_snapshot(str(snapshot_path))
+        preview_window.show()
+        preview_window.raise_()  # Bring the window to the front
+        preview_window.activateWindow()  # Activate the window
+
+    def delete_flipbook(self):
+        logger.debug("Delete Flipbook button clicked")
+        selected_items = self.file_list_widget.selectedItems()
+        if not selected_items or selected_items[0].childCount() > 0:
+            self.show_warning_dialog("Invalid Selection", "Please select a valid file to delete its flipbook.")
+            return
+
+        selected_item = selected_items[0]
+        file_path = Path(selected_item.data(0, QtCore.Qt.UserRole))
+        file_name = file_path.stem
+
+        user = self.user_combo.currentText()
+        flipbook_folder = self.base_path / 'pyDump' / user / "Snips" / "preview" / "flipbook" / file_name
+
+        if not flipbook_folder.exists():
+            self.show_warning_dialog("No Flipbook", "There is no flipbook to delete for this file.")
+            return
+
+        reply = self.show_question_dialog("Delete Flipbook", 
+                                          "Are you sure you want to delete this flipbook?",
+                                          QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                                          QtWidgets.QMessageBox.No)
+        if reply == QtWidgets.QMessageBox.Yes:
+            try:
+                shutil.rmtree(flipbook_folder)
+                logger.info(f"Flipbook deleted successfully: {flipbook_folder}")
+                self.update_flipbook_path_in_json(file_name, "")
+                self.show_info_dialog("Flipbook Deleted", "The flipbook has been successfully deleted.")
+                self.refresh_ui()
+                self.reselect_file(file_path)
+            except Exception as e:
+                logger.error(f"Error deleting flipbook: {e}")
+                self.show_error_dialog("Flipbook Deletion Failed", f"Failed to delete flipbook: {e}")
+
+    def delete_snapshot(self):
+        logger.debug("Delete Snapshot button clicked")
+        selected_items = self.file_list_widget.selectedItems()
+        if not selected_items or selected_items[0].childCount() > 0:
+            self.show_warning_dialog("Invalid Selection", "Please select a valid file to delete its snapshot.")
+            return
+
+        selected_item = selected_items[0]
+        file_path = Path(selected_item.data(0, QtCore.Qt.UserRole))
+        file_name = file_path.stem
+
+        user = self.user_combo.currentText()
+        snapshot_path = self.base_path / 'pyDump' / user / "Snips" / "preview" / "snapshot" / f"{file_name}.png"
+
+        if not snapshot_path.exists():
+            self.show_warning_dialog("No Snapshot", "There is no snapshot to delete for this file.")
+            return
+
+        reply = self.show_question_dialog("Delete Snapshot", 
+                                          "Are you sure you want to delete this snapshot?",
+                                          QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                                          QtWidgets.QMessageBox.No)
+        if reply == QtWidgets.QMessageBox.Yes:
+            try:
+                snapshot_path.unlink()
+                logger.info(f"Snapshot deleted successfully: {snapshot_path}")
+                self.update_snapshot_path_in_json(file_name, "")
+                self.show_info_dialog("Snapshot Deleted", "The snapshot has been successfully deleted.")
+                self.refresh_ui()
+                self.reselect_file(file_path)
+            except Exception as e:
+                logger.error(f"Error deleting snapshot: {e}")
+                self.show_error_dialog("Snapshot Deletion Failed", f"Failed to delete snapshot: {e}")
+
+    def update_snapshot_preview(self, snapshot):
+        logger.debug(f"Updating snapshot preview with: {snapshot}")
+        if isinstance(snapshot, str) or isinstance(snapshot, Path):
+            if Path(snapshot).exists():
+                pixmap = QtGui.QPixmap(str(snapshot))
+                if not pixmap.isNull():
+                    scaled_pixmap = pixmap.scaled(self.snapshot_preview.size(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+                    self.snapshot_preview.setPixmap(scaled_pixmap)
+                    self.current_snapshot_path = snapshot
+                else:
+                    logger.warning(f"Failed to load snapshot: {snapshot}")
+                    self.snapshot_preview.setText("Failed to load snapshot")
+                    self.current_snapshot_path = None
+            else:
+                logger.warning(f"Snapshot file not found: {snapshot}")
+                self.clear_snapshot()
+        elif isinstance(snapshot, QtGui.QPixmap):
+            scaled_pixmap = snapshot.scaled(self.snapshot_preview.size(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+            self.snapshot_preview.setPixmap(scaled_pixmap)
+            self.current_snapshot_path = None  # We don't have a file path in this case
+        else:
+            logger.error(f"Invalid snapshot type: {type(snapshot)}")
+            self.clear_snapshot()
+
+    def scale_pixmap_to_fit(self, pixmap: QtGui.QPixmap, target_size: QtCore.QSize) -> QtGui.QPixmap:
+        # Scale the pixmap to fit within the target size while maintaining aspect ratio
+        scaled_pixmap = pixmap.scaled(target_size, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+        
+        # Create a new pixmap with the target size and transparent background
+        result_pixmap = QtGui.QPixmap(target_size)
+        result_pixmap.fill(QtCore.Qt.transparent)
+        
+        # Create a painter to draw on the result pixmap
+        painter = QtGui.QPainter(result_pixmap)
+        
+        # Calculate the position to center the scaled pixmap
+        x = (target_size.width() - scaled_pixmap.width()) // 2
+        y = (target_size.height() - scaled_pixmap.height()) // 2
+        
+        # Draw the scaled pixmap centered on the result pixmap
+        painter.drawPixmap(x, y, scaled_pixmap)
+        painter.end()
+        
+        return result_pixmap
+
+    def resizeEvent(self, event: QtGui.QResizeEvent):
+        super().resizeEvent(event)
+        # Update the snapshot preview when the window is resized
+        if hasattr(self, 'snapshot_preview') and self.current_snapshot_path:
+            self.update_snapshot_preview(self.current_snapshot_path)
+
+    def setup_show_dialogs_checkbox(self):
+        self.show_dialogs_checkbox = QtWidgets.QCheckBox("Show information dialogs")
+        self.show_dialogs_checkbox.setStyleSheet("""
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #555555;
+        """)
+        self.show_dialogs_checkbox.stateChanged.connect(self.save_dialog_preference)
+        return self.show_dialogs_checkbox
+
+    def save_dialog_preference(self):
+        preference = self.show_dialogs_checkbox.isChecked()
+        try:
+            pref_file = Path(hou.expandString('$HOUDINI_USER_PREF_DIR')) / 'snip_ui_preferences.json'
+            with pref_file.open('w') as f:
+                json.dump({'show_dialogs': preference}, f)
+        except Exception as e:
+            logger.error(f"Error saving dialog preference: {e}")
+
+    def load_dialog_preference(self):
+        try:
+            pref_file = Path(hou.expandString('$HOUDINI_USER_PREF_DIR')) / 'snip_ui_preferences.json'
+            if pref_file.exists():
+                with pref_file.open('r') as f:
+                    prefs = json.load(f)
+                    return prefs.get('show_dialogs', True)
+            else:
+                return True
+        except Exception as e:
+            logger.error(f"Error loading dialog preference: {e}")
+            return True
+
+    def show_info_dialog(self, title: str, message: str):
+        if self.show_dialogs_checkbox.isChecked():
+            QtWidgets.QMessageBox.information(self, title, message)
+        else:
+            logger.info(f"{title}: {message}")
+
+    def show_warning_dialog(self, title, message):
+        if self.show_dialogs_checkbox.isChecked():
+            QtWidgets.QMessageBox.warning(self, title, message)
+        else:
+            logger.warning(f"{title}: {message}")
+
+    def show_info_dialog(self, title: str, message: str):
+        if self.show_dialogs_checkbox.isChecked():
+            QtWidgets.QMessageBox.information(self, title, message)
+        else:
+            logger.info(f"{title}: {message}")
+
+    def show_error_dialog(self, title: str, message: str):
+        if self.show_dialogs_checkbox.isChecked():
+            QtWidgets.QMessageBox.critical(self, title, message)
+        else:
+            logger.error(f"{title}: {message}")
+
+    def show_question_dialog(self, title: str, message: str, buttons=QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, default_button=QtWidgets.QMessageBox.No):
+        if self.show_dialogs_checkbox.isChecked():
+            return QtWidgets.QMessageBox.question(self, title, message, buttons, default_button)
+        else:
+            logger.info(f"{title}: {message} (Automatically choosing 'Yes')")
+            return QtWidgets.QMessageBox.Yes  # Always return 'Yes' when dialogs are off
+
+    def closeEvent(self, event: QtGui.QCloseEvent):
+        self.save_settings()
+        super().closeEvent(event)
+
+    def connect_signals(self):
+        self.user_combo.currentTextChanged.connect(self.on_user_changed)
+        self.group_combo.currentTextChanged.connect(self.on_group_changed)
+        self.filter_line_edit.textChanged.connect(self.filter_files)
+        self.load_button.clicked.connect(self.load_action)
+        self.delete_button.clicked.connect(self.delete_selected_file)
+        self.refresh_button.clicked.connect(self.refresh_ui)
+        self.close_button.clicked.connect(self.close)
+        self.toggle_preview_checkbox.stateChanged.connect(self.toggle_preview)
+
+    def populate_user_combo(self):
+        users = self.file_manager.get_users()
+        self.user_combo.clear()
+        self.user_combo.addItems(users)
+        current_user = hou.getenv("USER")
+        if current_user in users:
+            self.user_combo.setCurrentText(current_user)
+        elif users:
+            self.user_combo.setCurrentText(users[0])
+
+    async def update_preview_async(self):
+        selected_items = self.file_list_widget.selectedItems()
+        if selected_items and not selected_items[0].childCount():
+            selected_item = selected_items[0]
+            file_path = Path(selected_item.data(0, QtCore.Qt.UserRole))
+            
+            json_data = await self.load_json_data_async(file_path.stem)
+            if json_data:
+                self.format_preview_text(json_data)
+                await self.load_preview_assets_async(json_data)
+            else:
+                self.clear_preview()
+
+    def on_item_changed(self, item, column):
+        if not item or item.childCount() > 0:  # Ignore group items
+            return
+
+        try:
+            old_full_name = Path(item.data(0, QtCore.Qt.UserRole)).stem
+            parts = old_full_name.split('_')
+            
+            if len(parts) != 5:
+                self.show_error_dialog("Invalid Name Format", "The file name does not follow the expected format.")
+                return
+
+            new_value = item.text(column)
+            formatted_value = self.format_name(new_value)
+
+            new_parts = parts.copy()
+            if column == 0:  # Context
+                new_parts[0] = formatted_value.upper()
+            elif column == 1:  # Type
+                new_parts[1] = formatted_value
+            elif column == 2:  # Name
+                new_parts[2] = formatted_value
+            elif column == 3:  # Source
+                new_parts[3] = formatted_value
+            elif column == 4:  # Version
+                new_parts[4] = formatted_value.lower()
+
+            new_full_name = '_'.join(new_parts)
+            
+            # Only update if the name has actually changed
+            if new_full_name != old_full_name:
+                self.update_item_name(item, new_full_name, column)
+            else:
+                # If no change, just update the displayed text to the formatted version
+                item.setText(column, new_parts[column])
+
+        except Exception as e:
+            self.show_error_dialog("Update Failed", f"An error occurred while updating the item: {str(e)}")
+
+    def update_item_name(self, item, new_full_name, updated_column):
+        old_file_path = Path(item.data(0, QtCore.Qt.UserRole))
+        old_full_name = old_file_path.stem
+        user = self.user_combo.currentText()
+        
+        # Update the file name
+        new_file_path = old_file_path.with_name(f"{new_full_name}{old_file_path.suffix}")
+        try:
+            old_file_path.rename(new_file_path)
+        except Exception as e:
+            self.show_error_dialog("Rename Failed", f"Failed to rename file: {e}")
+            # Revert the name change in the UI
+            old_parts = old_full_name.split('_')
+            item.setText(updated_column, old_parts[updated_column])
+            return
+
+        # Update flipbook directory and image sequence
+        old_flipbook_dir = self.base_path / 'pyDump' / user / 'Snips' / 'preview' / 'flipbook' / old_full_name
+        new_flipbook_dir = self.base_path / 'pyDump' / user / 'Snips' / 'preview' / 'flipbook' / new_full_name
+        if old_flipbook_dir.exists():
+            try:
+                # Rename image sequence files
+                for old_file in old_flipbook_dir.glob(f"{old_full_name}.*"):
+                    frame_number = old_file.stem.split('.')[-1]
+                    new_file_name = f"{new_full_name}.{frame_number}{old_file.suffix}"
+                    old_file.rename(old_flipbook_dir / new_file_name)
+                
+                # Rename the directory
+                old_flipbook_dir.rename(new_flipbook_dir)
+            except Exception as e:
+                self.show_error_dialog("Flipbook Update Failed", f"Failed to update flipbook: {e}")
+
+        # Update snapshot
+        old_snapshot_path = self.base_path / 'pyDump' / user / 'Snips' / 'preview' / 'snapshot' / f"{old_full_name}.png"
+        new_snapshot_path = self.base_path / 'pyDump' / user / 'Snips' / 'preview' / 'snapshot' / f"{new_full_name}.png"
+        if old_snapshot_path.exists():
+            try:
+                old_snapshot_path.rename(new_snapshot_path)
+            except Exception as e:
+                self.show_error_dialog("Snapshot Update Failed", f"Failed to update snapshot: {e}")
+
+        # Update the item's data
+        item.setData(0, QtCore.Qt.UserRole, str(new_file_path))
+
+        self.show_info_dialog("Name Updated", f"Successfully updated the {['Context', 'Type', 'Name', 'Source', 'Version'][updated_column]}")
+        self.refresh_ui()
+
+    def format_name(self, input_string):
+        # Remove special characters and spaces
+        cleaned = re.sub(r'[^a-zA-Z0-9 ]', '', input_string)
+        
+        # Split the string into words
+        words = cleaned.split()
+        
+        # Capitalize the first letter of each word except the first one
+        formatted = words[0].lower() + ''.join(word.capitalize() for word in words[1:])
+        
+        return formatted
+
+    def show_large_flipbook_preview(self):
+        selected_items = self.file_list_widget.selectedItems()
+        if not selected_items or selected_items[0].childCount() > 0:
+            return
+
+        selected_item = selected_items[0]
+        file_path = Path(selected_item.data(0, QtCore.Qt.UserRole))
+        file_name = file_path.stem
+
+        user = self.user_combo.currentText()
+        flipbook_folder = self.base_path / 'pyDump' / user / "Snips" / "preview" / "flipbook" / file_name
+
+        if not flipbook_folder.exists():
+            return
+
+        preview_window = LargePreviewWindow(self)
+        preview_window.set_flipbook(str(flipbook_folder))
+        preview_window.show()
+        preview_window.raise_()  # Bring the window to the front
+        preview_window.activateWindow()  # Activate the window
+
+    def show_large_snapshot_preview(self):
+        selected_items = self.file_list_widget.selectedItems()
+        if not selected_items or selected_items[0].childCount() > 0:
+            return
+
+        selected_item = selected_items[0]
+        file_path = Path(selected_item.data(0, QtCore.Qt.UserRole))
+        file_name = file_path.stem
+
+        user = self.user_combo.currentText()
+        snapshot_path = self.base_path / 'pyDump' / user / "Snips" / "preview" / "snapshot" / f"{file_name}.png"
+
+        if not snapshot_path.exists():
+            return
+
+        preview_window = LargePreviewWindow(self)
+        preview_window.set_snapshot(str(snapshot_path))
+        preview_window.show()
+        preview_window.raise_()  # Bring the window to the front
+        preview_window.activateWindow()  # Activate the window
+
+    def delete_flipbook(self):
+        logger.debug("Delete Flipbook button clicked")
+        selected_items = self.file_list_widget.selectedItems()
+        if not selected_items or selected_items[0].childCount() > 0:
+            self.show_warning_dialog("Invalid Selection", "Please select a valid file to delete its flipbook.")
+            return
+
+        selected_item = selected_items[0]
+        file_path = Path(selected_item.data(0, QtCore.Qt.UserRole))
+        file_name = file_path.stem
+
+        user = self.user_combo.currentText()
+        flipbook_folder = self.base_path / 'pyDump' / user / "Snips" / "preview" / "flipbook" / file_name
+
+        if not flipbook_folder.exists():
+            self.show_warning_dialog("No Flipbook", "There is no flipbook to delete for this file.")
+            return
+
+        reply = self.show_question_dialog("Delete Flipbook", 
+                                          "Are you sure you want to delete this flipbook?",
+                                          QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                                          QtWidgets.QMessageBox.No)
+        if reply == QtWidgets.QMessageBox.Yes:
+            try:
+                shutil.rmtree(flipbook_folder)
+                logger.info(f"Flipbook deleted successfully: {flipbook_folder}")
+                self.update_flipbook_path_in_json(file_name, "")
+                self.show_info_dialog("Flipbook Deleted", "The flipbook has been successfully deleted.")
+                self.refresh_ui()
+                self.reselect_file(file_path)
+            except Exception as e:
+                logger.error(f"Error deleting flipbook: {e}")
+                self.show_error_dialog("Flipbook Deletion Failed", f"Failed to delete flipbook: {e}")
+
+    def delete_snapshot(self):
+        logger.debug("Delete Snapshot button clicked")
+        selected_items = self.file_list_widget.selectedItems()
+        if not selected_items or selected_items[0].childCount() > 0:
+            self.show_warning_dialog("Invalid Selection", "Please select a valid file to delete its snapshot.")
+            return
+
+        selected_item = selected_items[0]
+        file_path = Path(selected_item.data(0, QtCore.Qt.UserRole))
+        file_name = file_path.stem
+
+        user = self.user_combo.currentText()
+        snapshot_path = self.base_path / 'pyDump' / user / "Snips" / "preview" / "snapshot" / f"{file_name}.png"
+
+        if not snapshot_path.exists():
+            self.show_warning_dialog("No Snapshot", "There is no snapshot to delete for this file.")
+            return
+
+        reply = self.show_question_dialog("Delete Snapshot", 
+                                          "Are you sure you want to delete this snapshot?",
+                                          QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                                          QtWidgets.QMessageBox.No)
+        if reply == QtWidgets.QMessageBox.Yes:
+            try:
+                snapshot_path.unlink()
+                logger.info(f"Snapshot deleted successfully: {snapshot_path}")
+                self.update_snapshot_path_in_json(file_name, "")
+                self.show_info_dialog("Snapshot Deleted", "The snapshot has been successfully deleted.")
+                self.refresh_ui()
+                self.reselect_file(file_path)
+            except Exception as e:
+                logger.error(f"Error deleting snapshot: {e}")
+                self.show_error_dialog("Snapshot Deletion Failed", f"Failed to delete snapshot: {e}")
+
+    def update_snapshot_preview(self, snapshot):
+        logger.debug(f"Updating snapshot preview with: {snapshot}")
+        if isinstance(snapshot, str) or isinstance(snapshot, Path):
+            if Path(snapshot).exists():
+                pixmap = QtGui.QPixmap(str(snapshot))
+                if not pixmap.isNull():
+                    scaled_pixmap = pixmap.scaled(self.snapshot_preview.size(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+                    self.snapshot_preview.setPixmap(scaled_pixmap)
+                    self.current_snapshot_path = snapshot
+                else:
+                    logger.warning(f"Failed to load snapshot: {snapshot}")
+                    self.snapshot_preview.setText("Failed to load snapshot")
+                    self.current_snapshot_path = None
+            else:
+                logger.warning(f"Snapshot file not found: {snapshot}")
+                self.clear_snapshot()
+        elif isinstance(snapshot, QtGui.QPixmap):
+            scaled_pixmap = snapshot.scaled(self.snapshot_preview.size(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+            self.snapshot_preview.setPixmap(scaled_pixmap)
+            self.current_snapshot_path = None  # We don't have a file path in this case
+        else:
+            logger.error(f"Invalid snapshot type: {type(snapshot)}")
+            self.clear_snapshot()
+
+    def scale_pixmap_to_fit(self, pixmap: QtGui.QPixmap, target_size: QtCore.QSize) -> QtGui.QPixmap:
+        # Scale the pixmap to fit within the target size while maintaining aspect ratio
+        scaled_pixmap = pixmap.scaled(target_size, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+        
+        # Create a new pixmap with the target size and transparent background
+        result_pixmap = QtGui.QPixmap(target_size)
+        result_pixmap.fill(QtCore.Qt.transparent)
+        
+        # Create a painter to draw on the result pixmap
+        painter = QtGui.QPainter(result_pixmap)
+        
+        # Calculate the position to center the scaled pixmap
+        x = (target_size.width() - scaled_pixmap.width()) // 2
+        y = (target_size.height() - scaled_pixmap.height()) // 2
+        
+        # Draw the scaled pixmap centered on the result pixmap
+        painter.drawPixmap(x, y, scaled_pixmap)
+        painter.end()
+        
+        return result_pixmap
+
+    def resizeEvent(self, event: QtGui.QResizeEvent):
+        super().resizeEvent(event)
+        # Update the snapshot preview when the window is resized
+        if hasattr(self, 'snapshot_preview') and hasattr(self, 'current_snapshot_path') and self.current_snapshot_path:
+            self.update_snapshot_preview(self.current_snapshot_path)
+
+    def setup_show_dialogs_checkbox(self):
+        self.show_dialogs_checkbox = QtWidgets.QCheckBox("Show information dialogs")
+        self.show_dialogs_checkbox.setStyleSheet("""
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #555555;
+        """)
+        self.show_dialogs_checkbox.stateChanged.connect(self.save_dialog_preference)
+        return self.show_dialogs_checkbox
+
+    def save_dialog_preference(self):
+        preference = self.show_dialogs_checkbox.isChecked()
+        try:
+            pref_file = Path(hou.expandString('$HOUDINI_USER_PREF_DIR')) / 'snip_ui_preferences.json'
+            with pref_file.open('w') as f:
+                json.dump({'show_dialogs': preference}, f)
+        except Exception as e:
+            logger.error(f"Error saving dialog preference: {e}")
+
+    def load_dialog_preference(self):
+        try:
+            pref_file = Path(hou.expandString('$HOUDINI_USER_PREF_DIR')) / 'snip_ui_preferences.json'
+            if pref_file.exists():
+                with pref_file.open('r') as f:
+                    prefs = json.load(f)
+                    return prefs.get('show_dialogs', True)
+            else:
+                return True
+        except Exception as e:
+            logger.error(f"Error loading dialog preference: {e}")
+            return True
+
+    def show_info_dialog(self, title: str, message: str):
+        if self.show_dialogs_checkbox.isChecked():
+            QtWidgets.QMessageBox.information(self, title, message)
+        else:
+            logger.info(f"{title}: {message}")
+
+    def show_warning_dialog(self, title, message):
+        if self.show_dialogs_checkbox.isChecked():
+            QtWidgets.QMessageBox.warning(self, title, message)
+        else:
+            logger.warning(f"{title}: {message}")
+
+    def show_info_dialog(self, title: str, message: str):
+        if self.show_dialogs_checkbox.isChecked():
+            QtWidgets.QMessageBox.information(self, title, message)
+        else:
+            logger.info(f"{title}: {message}")
+
+    def show_error_dialog(self, title: str, message: str):
+        if self.show_dialogs_checkbox.isChecked():
+            QtWidgets.QMessageBox.critical(self, title, message)
+        else:
+            logger.error(f"{title}: {message}")
+
+    def show_question_dialog(self, title: str, message: str, buttons=QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, default_button=QtWidgets.QMessageBox.No):
+        if self.show_dialogs_checkbox.isChecked():
+            return QtWidgets.QMessageBox.question(self, title, message, buttons, default_button)
+        else:
+            logger.info(f"{title}: {message} (Automatically choosing 'Yes')")
+            return QtWidgets.QMessageBox.Yes  # Always return 'Yes' when dialogs are off
+
+    def closeEvent(self, event: QtGui.QCloseEvent):
+        self.save_settings()
+        super().closeEvent(event)
+
+    def connect_signals(self):
+        try:
+            logger.debug("Connecting signals...")
+            self.user_combo.currentTextChanged.connect(self.on_user_changed)
+            self.group_combo.currentTextChanged.connect(self.on_group_changed)
+            self.filter_line_edit.textChanged.connect(self.filter_files)
+            self.toggle_preview_checkbox.stateChanged.connect(self.toggle_preview)
+            logger.debug("Signals connected successfully")
+        except Exception as e:
+            logger.error(f"Error connecting signals: {str(e)}", exc_info=True)
+            raise
+
+    def populate_user_combo(self):
+        users = self.file_manager.get_users()
+        self.user_combo.clear()
         self.user_combo.addItems(users)
         current_user = hou.getenv("USER")
         if current_user in users:
@@ -1305,52 +2003,33 @@ class MyShelfToolUI(QtWidgets.QWidget):
         self.update_file_list()
    
     def update_file_list(self):
-        logger.info("Starting update_file_list")
-        selected_user = self.user_combo.currentText() if self.user_checkbox.isChecked() else None
-        selected_group = self.group_combo.currentText() if self.group_checkbox.isChecked() else None
-        selected_sources = self.get_selected_sources() if self.source_checkbox.isChecked() else None
+        """Update file list with better error handling."""
+        try:
+            selected_user = self.user_combo.currentText() if self.user_checkbox.isChecked() else None
+            if not selected_user:
+                # If no user is selected, use the current system user
+                selected_user = os.getenv('USER', 'default')
+            
+            selected_group = self.group_combo.currentText() if self.group_checkbox.isChecked() else None
+            selected_sources = self.get_selected_sources() if self.source_checkbox.isChecked() else None
 
-        logger.info(f"Selected user: {selected_user}, group: {selected_group}, sources: {selected_sources}")
-
-        current_item = self.file_list_widget.currentItem()
-        current_file_path = current_item.data(0, QtCore.Qt.UserRole) if current_item else None
-
-        self.file_list_widget.clear()
-        self.file_groups = {}  # Reset file_groups here
-
-        category_path = self.base_path / 'pyDump' / selected_user / 'Snips' if selected_user else None
-        logger.info(f"Category path: {category_path}")
-
-        if category_path and category_path.exists():
-            all_files = list(category_path.glob('*'))
-            logger.info(f"Found {len(all_files)} files")
-            for file_path in all_files:
+            self.file_list_widget.clear()
+            
+            category_path = self.base_path / 'pyDump' / selected_user / 'Snips'
+            if not category_path.exists():
+                logger.warning(f"Category path does not exist: {category_path}")
+                category_path.mkdir(parents=True, exist_ok=True)
+                return
+            
+            for file_path in category_path.glob('*'):
                 if file_path.suffix in SUPPORTED_EXTENSIONS:
-                    logger.info(f"Processing file: {file_path}")
-                    try:
-                        self.populate_file_item(file_path, selected_group, selected_sources)
-                    except Exception as e:
-                        logger.error(f"Error processing file {file_path}: {str(e)}")
-
-        # Sort the groups
-        for group_item in self.file_groups.values():
-            group_item.sortChildren(0, QtCore.Qt.AscendingOrder)
-
-        # Expand all groups
-        self.file_list_widget.expandAll()
-
-        # Restore the previous selection if possible
-        if current_file_path:
-            items = self.file_list_widget.findItems(Path(current_file_path).stem, QtCore.Qt.MatchContains | QtCore.Qt.MatchRecursive)
-            if items:
-                self.file_list_widget.setCurrentItem(items[0])
-                self.file_list_widget.scrollToItem(items[0])
-
-        logger.info(f"Finished updating file list for user {selected_user}")
-        logger.info(f"Total top-level items: {self.file_list_widget.topLevelItemCount()}")
-        for i in range(self.file_list_widget.topLevelItemCount()):
-            top_level_item = self.file_list_widget.topLevelItem(i)
-            logger.info(f"Top-level item {i}: {top_level_item.text(0)}, Child count: {top_level_item.childCount()}")
+                    self.populate_file_item(file_path, selected_group, selected_sources)
+            
+            logger.info(f"Updated file list for user {selected_user}")
+            
+        except Exception as e:
+            logger.error(f"Error updating file list: {str(e)}", exc_info=True)
+            self.show_error_dialog("Update Failed", f"Failed to update file list: {str(e)}")
 
     @staticmethod
     def camel_case_to_words(name: str) -> str:
@@ -1606,6 +2285,7 @@ class MyShelfToolUI(QtWidgets.QWidget):
             QtCore.QTimer.singleShot(0, self.file_list_widget.setFocus)
 
 
+
     async def load_preview_assets_async(self, json_data: Dict):
         try:
             logger.debug(f"Loading preview assets for: {json_data.get('File Name', 'Unknown')}")
@@ -1692,23 +2372,11 @@ class MyShelfToolUI(QtWidgets.QWidget):
     def load_json_data(self):
         user = self.user_combo.currentText()
         master_json_path = Path(self.base_path) / 'pyDump' / user / 'Snips' / 'descriptions' / 'master.json'
-        
         try:
-            # Create directory structure if it doesn't exist
-            master_json_path.parent.mkdir(parents=True, exist_ok=True)
-            
-            # Create empty master.json if it doesn't exist
-            if not master_json_path.exists():
-                with master_json_path.open('w') as f:
-                    json.dump([], f)
-            
             with master_json_path.open('r') as f:
                 self.json_data = json.load(f)
-                
             if not isinstance(self.json_data, list):
-                logger.warning("JSON data is not a list, initializing empty list")
-                self.json_data = []
-                
+                raise ValueError("JSON data is not a list")
             logger.info(f"Loaded JSON data for user {user}: {len(self.json_data)} entries")
         except Exception as e:
             logger.error(f"Failed to load JSON data: {e}")
@@ -3102,6 +3770,327 @@ class MyShelfToolUI(QtWidgets.QWidget):
         # Connect the snip_created signal to update the file list
         hou.session.write_snip_ui_instance.snip_created.connect(self.update_file_list)
 
+    def create_filter_layout(self):
+        try:
+            logger.debug("Creating filter layout...")
+            filter_layout = QtWidgets.QHBoxLayout()
+
+            # User filter
+            user_layout = QtWidgets.QHBoxLayout()
+            user_layout.addWidget(self.user_checkbox)
+            user_layout.addWidget(self.user_combo)
+            filter_layout.addLayout(user_layout)
+
+            # Group filter
+            group_layout = QtWidgets.QHBoxLayout()
+            group_layout.addWidget(self.group_checkbox)
+            group_layout.addWidget(self.group_combo)
+            filter_layout.addLayout(group_layout)
+
+            # Source filter
+            source_layout = QtWidgets.QHBoxLayout()
+            source_layout.addWidget(self.source_checkbox)
+            source_layout.addWidget(self.source_filter_combo)
+            filter_layout.addLayout(source_layout)
+
+            logger.debug("Filter layout created successfully")
+            return filter_layout
+
+        except Exception as e:
+            logger.error(f"Error creating filter layout: {str(e)}", exc_info=True)
+            raise
+
+    def create_search_layout(self):
+        try:
+            logger.debug("Creating search layout...")
+            search_layout = QtWidgets.QHBoxLayout()
+            
+            # Search label
+            search_label = QtWidgets.QLabel("Search:")
+            search_layout.addWidget(search_label)
+            
+            # Search input
+            self.filter_line_edit.setPlaceholderText("Search files...")
+            search_layout.addWidget(self.filter_line_edit)
+            
+            logger.debug("Search layout created successfully")
+            return search_layout
+            
+        except Exception as e:
+            logger.error(f"Error creating search layout: {str(e)}", exc_info=True)
+            raise
+
+    def create_button_layout(self):
+        try:
+            logger.debug("Creating button layout...")
+            button_layout = QtWidgets.QHBoxLayout()
+            
+            # Create buttons
+            self.load_button = QtWidgets.QPushButton("Load")
+            self.delete_button = QtWidgets.QPushButton("Delete")
+            self.refresh_button = QtWidgets.QPushButton("Refresh")
+            self.close_button = QtWidgets.QPushButton("Close")
+            
+            # Add buttons to layout
+            button_layout.addWidget(self.load_button)
+            button_layout.addWidget(self.delete_button)
+            button_layout.addWidget(self.refresh_button)
+            button_layout.addWidget(self.close_button)
+            
+            # Connect button signals
+            self.load_button.clicked.connect(self.load_action)
+            self.delete_button.clicked.connect(self.delete_selected_file)
+            self.refresh_button.clicked.connect(self.refresh_ui)
+            self.close_button.clicked.connect(self.close)
+            
+            logger.debug("Button layout created successfully")
+            return button_layout
+            
+        except Exception as e:
+            logger.error(f"Error creating button layout: {str(e)}", exc_info=True)
+            raise
+
+    def setup_description_section(self, layout):
+        try:
+            logger.debug("Setting up description section...")
+            
+            # Description label
+            description_label = QtWidgets.QLabel("Description:")
+            layout.addWidget(description_label)
+            
+            # Description text edit
+            self.description_widget = QtWidgets.QTextEdit()
+            self.description_widget.setReadOnly(True)
+            layout.addWidget(self.description_widget)
+            
+            # Description buttons
+            desc_button_layout = QtWidgets.QHBoxLayout()
+            self.description_edit_button = QtWidgets.QPushButton("Edit")
+            self.description_save_button = QtWidgets.QPushButton("Save")
+            self.description_save_button.setEnabled(False)
+            
+            desc_button_layout.addWidget(self.description_edit_button)
+            desc_button_layout.addWidget(self.description_save_button)
+            layout.addLayout(desc_button_layout)
+            
+            # Connect signals
+            self.description_edit_button.clicked.connect(self.toggle_description_edit)
+            self.description_save_button.clicked.connect(self.save_description)
+            
+            logger.debug("Description section setup completed")
+            
+        except Exception as e:
+            logger.error(f"Error setting up description section: {str(e)}", exc_info=True)
+            raise
+
+    def setup_flipbook_section(self, layout):
+        try:
+            logger.debug("Setting up flipbook section...")
+            
+            # Flipbook label
+            flipbook_label = QtWidgets.QLabel("Flipbook:")
+            layout.addWidget(flipbook_label)
+            
+            # Flipbook preview
+            self.flipbook_preview = ClickableLabel()
+            self.flipbook_preview.setMinimumSize(400, 300)
+            self.flipbook_preview.setAlignment(Qt.AlignCenter)
+            self.flipbook_preview.setText("No flipbook available")
+            self.flipbook_preview.clicked.connect(self.show_large_flipbook_preview)
+            layout.addWidget(self.flipbook_preview)
+            
+            # Flipbook buttons
+            flipbook_button_layout = QtWidgets.QHBoxLayout()
+            self.flipbook_new_button = QtWidgets.QPushButton("New Flipbook")
+            self.flipbook_delete_button = QtWidgets.QPushButton("Delete Flipbook")
+            
+            flipbook_button_layout.addWidget(self.flipbook_new_button)
+            flipbook_button_layout.addWidget(self.flipbook_delete_button)
+            layout.addLayout(flipbook_button_layout)
+            
+            # Connect signals
+            self.flipbook_new_button.clicked.connect(self.create_flipbook)
+            self.flipbook_delete_button.clicked.connect(self.delete_flipbook)
+            
+            logger.debug("Flipbook section setup completed")
+            
+        except Exception as e:
+            logger.error(f"Error setting up flipbook section: {str(e)}", exc_info=True)
+            raise
+
+    def setup_snapshot_section(self, layout):
+        try:
+            logger.debug("Setting up snapshot section...")
+            
+            # Snapshot label
+            snapshot_label = QtWidgets.QLabel("Snapshot:")
+            layout.addWidget(snapshot_label)
+            
+            # Snapshot preview
+            self.snapshot_preview = ClickableLabel()
+            self.snapshot_preview.setMinimumSize(400, 300)
+            self.snapshot_preview.setAlignment(Qt.AlignCenter)
+            self.snapshot_preview.setText("No snapshot available")
+            self.snapshot_preview.clicked.connect(self.show_large_snapshot_preview)
+            layout.addWidget(self.snapshot_preview)
+            
+            # Snapshot buttons
+            snapshot_button_layout = QtWidgets.QHBoxLayout()
+            self.snapshot_new_button = QtWidgets.QPushButton("New Snapshot")
+            self.snapshot_delete_button = QtWidgets.QPushButton("Delete Snapshot")
+            
+            snapshot_button_layout.addWidget(self.snapshot_new_button)
+            snapshot_button_layout.addWidget(self.snapshot_delete_button)
+            layout.addLayout(snapshot_button_layout)
+            
+            # Connect signals
+            self.snapshot_new_button.clicked.connect(self.create_snapshot)
+            self.snapshot_delete_button.clicked.connect(self.delete_snapshot)
+            
+            logger.debug("Snapshot section setup completed")
+            
+        except Exception as e:
+            logger.error(f"Error setting up snapshot section: {str(e)}", exc_info=True)
+            raise
+
+    def toggle_description_edit(self):
+        """Toggle between edit and read-only mode for description."""
+        try:
+            if self.description_widget.isReadOnly():
+                # Switch to edit mode
+                self.description_widget.setReadOnly(False)
+                self.description_edit_button.setText("Cancel")
+                self.description_save_button.setEnabled(True)
+                # Store original text in case of cancel
+                self.original_description = self.description_widget.toPlainText()
+            else:
+                # Switch back to read-only mode
+                self.description_widget.setReadOnly(True)
+                self.description_edit_button.setText("Edit")
+                self.description_save_button.setEnabled(False)
+                # Restore original text if canceling
+                self.description_widget.setPlainText(self.original_description)
+            
+            logger.debug("Description edit mode toggled")
+            
+        except Exception as e:
+            logger.error(f"Error toggling description edit mode: {e}", exc_info=True)
+            self.show_error_dialog("Edit Failed", f"Failed to toggle description edit mode: {e}")
+
+    def save_description(self):
+        """Save the edited description."""
+        try:
+            selected_items = self.file_list_widget.selectedItems()
+            if not selected_items or selected_items[0].childCount() > 0:
+                self.show_warning_dialog("Invalid Selection", "Please select a valid file to save its description.")
+                return
+
+            selected_item = selected_items[0]
+            file_path = Path(selected_item.data(0, QtCore.Qt.UserRole))
+            new_description = self.description_widget.toPlainText()
+
+            # Update master.json
+            user = self.user_combo.currentText()
+            master_json_path = self.base_path / 'pyDump' / user / 'Snips' / 'descriptions' / 'master.json'
+
+            try:
+                with master_json_path.open('r') as f:
+                    master_data = json.load(f)
+
+                updated = False
+                for entry in master_data:
+                    if entry['File Name'] == file_path.stem:
+                        entry['Summary'] = new_description
+                        updated = True
+                        break
+
+                if not updated:
+                    new_entry = {
+                        "File Name": file_path.stem,
+                        "Summary": new_description,
+                    }
+                    master_data.append(new_entry)
+
+                with master_json_path.open('w') as f:
+                    json.dump(master_data, f, indent=4)
+
+                # Update the local json_data cache
+                for entry in self.json_data:
+                    if entry['File Name'] == file_path.stem:
+                        entry['Summary'] = new_description
+                        break
+                else:
+                    self.json_data.append(new_entry)
+
+                # Update the description widget
+                self.description_widget.setReadOnly(True)
+                self.description_edit_button.setText("Edit")
+                self.description_save_button.setEnabled(False)
+
+                # Clear the json_cache for this item to ensure fresh data on next load
+                self.json_cache.pop(file_path.stem, None)
+
+                self.show_info_dialog("Description Saved", "The description has been successfully updated.")
+                logger.info(f"Description updated for {file_path.stem}")
+
+            except Exception as e:
+                logger.error(f"Error saving description: {e}", exc_info=True)
+                self.show_error_dialog("Save Failed", f"Failed to save description: {e}")
+
+        except Exception as e:
+            logger.error(f"Error in save_description: {e}", exc_info=True)
+            self.show_error_dialog("Save Failed", f"Failed to save description: {e}")
+
+    def show_info_dialog(self, title: str, message: str):
+        """Show an information dialog."""
+        try:
+            if hasattr(self, 'show_dialogs_checkbox') and not self.show_dialogs_checkbox.isChecked():
+                return
+            
+            QtWidgets.QMessageBox.information(self, title, message)
+        except Exception as e:
+            logger.error(f"Error showing info dialog: {e}", exc_info=True)
+
+    def show_warning_dialog(self, title: str, message: str):
+        """Show a warning dialog."""
+        try:
+            if hasattr(self, 'show_dialogs_checkbox') and not self.show_dialogs_checkbox.isChecked():
+                return
+            
+            QtWidgets.QMessageBox.warning(self, title, message)
+        except Exception as e:
+            logger.error(f"Error showing warning dialog: {e}", exc_info=True)
+
+    def show_error_dialog(self, title: str, message: str):
+        """Show an error dialog."""
+        try:
+            if hasattr(self, 'show_dialogs_checkbox') and not self.show_dialogs_checkbox.isChecked():
+                return
+            
+            QtWidgets.QMessageBox.critical(self, title, message)
+        except Exception as e:
+            logger.error(f"Error showing error dialog: {e}", exc_info=True)
+
+    def show_question_dialog(self, title: str, message: str, buttons=QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, default_button=QtWidgets.QMessageBox.No):
+        """Show a question dialog and return the user's choice."""
+        try:
+            if hasattr(self, 'show_dialogs_checkbox') and not self.show_dialogs_checkbox.isChecked():
+                return default_button
+            
+            return QtWidgets.QMessageBox.question(self, title, message, buttons, default_button)
+        except Exception as e:
+            logger.error(f"Error showing question dialog: {e}", exc_info=True)
+            return default_button
+
+    def setup_show_dialogs_checkbox(self):
+        """Create and setup the show dialogs checkbox."""
+        try:
+            self.show_dialogs_checkbox = QtWidgets.QCheckBox("Show Dialog Messages")
+            self.show_dialogs_checkbox.setChecked(True)
+            return self.show_dialogs_checkbox
+        except Exception as e:
+            logger.error(f"Error setting up show dialogs checkbox: {e}", exc_info=True)
+            raise
 
 def show_my_shelf_tool_ui():
     try:
@@ -3158,4 +4147,5 @@ def show_my_shelf_tool_ui():
 # ... (rest of the existing code) ...
 
 # if __name__ == "__main__":
+#     show_my_shelf_tool_ui()
 #     show_my_shelf_tool_ui()

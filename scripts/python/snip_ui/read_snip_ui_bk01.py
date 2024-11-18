@@ -66,24 +66,14 @@ class FileManager:
     def load_json_data(self):
         user = self.user_combo.currentText()
         master_json_path = Path(self.base_path) / 'pyDump' / user / 'Snips' / 'descriptions' / 'master.json'
-        
+        logger.debug(f"Loading JSON data from: {master_json_path}")
         try:
-            # Create directory structure if it doesn't exist
-            master_json_path.parent.mkdir(parents=True, exist_ok=True)
-            
-            # Create empty master.json if it doesn't exist
-            if not master_json_path.exists():
-                with master_json_path.open('w') as f:
-                    json.dump([], f)
-            
             with master_json_path.open('r') as f:
                 self.json_data = json.load(f)
-                
             if not isinstance(self.json_data, list):
-                logger.warning("JSON data is not a list, initializing empty list")
-                self.json_data = []
-                
+                raise ValueError("JSON data is not a list")
             logger.info(f"Loaded JSON data for user {user}: {len(self.json_data)} entries")
+            logger.debug(f"First few entries: {self.json_data[:3]}")
         except Exception as e:
             logger.error(f"Failed to load JSON data: {e}")
             self.json_data = []
@@ -1264,28 +1254,6 @@ class MyShelfToolUI(QtWidgets.QWidget):
     def populate_user_combo(self):
         users = self.file_manager.get_users()
         self.user_combo.clear()
-        
-        # Check if users is None or empty
-        if not users:
-            logger.warning("No users found. Creating default structure.")
-            # Create default directory structure
-            default_user = hou.getenv("USER") or "default"
-            default_path = self.base_path / 'pyDump' / default_user / 'Snips'
-            default_path.mkdir(parents=True, exist_ok=True)
-            
-            # Create necessary subdirectories
-            (default_path / 'preview' / 'flipbook').mkdir(parents=True, exist_ok=True)
-            (default_path / 'preview' / 'snapshot').mkdir(parents=True, exist_ok=True)
-            (default_path / 'descriptions').mkdir(parents=True, exist_ok=True)
-            
-            # Create empty master.json if it doesn't exist
-            master_json_path = default_path / 'descriptions' / 'master.json'
-            if not master_json_path.exists():
-                with master_json_path.open('w') as f:
-                    json.dump([], f)
-            
-            users = [default_user]
-
         self.user_combo.addItems(users)
         current_user = hou.getenv("USER")
         if current_user in users:
@@ -1692,23 +1660,11 @@ class MyShelfToolUI(QtWidgets.QWidget):
     def load_json_data(self):
         user = self.user_combo.currentText()
         master_json_path = Path(self.base_path) / 'pyDump' / user / 'Snips' / 'descriptions' / 'master.json'
-        
         try:
-            # Create directory structure if it doesn't exist
-            master_json_path.parent.mkdir(parents=True, exist_ok=True)
-            
-            # Create empty master.json if it doesn't exist
-            if not master_json_path.exists():
-                with master_json_path.open('w') as f:
-                    json.dump([], f)
-            
             with master_json_path.open('r') as f:
                 self.json_data = json.load(f)
-                
             if not isinstance(self.json_data, list):
-                logger.warning("JSON data is not a list, initializing empty list")
-                self.json_data = []
-                
+                raise ValueError("JSON data is not a list")
             logger.info(f"Loaded JSON data for user {user}: {len(self.json_data)} entries")
         except Exception as e:
             logger.error(f"Failed to load JSON data: {e}")
