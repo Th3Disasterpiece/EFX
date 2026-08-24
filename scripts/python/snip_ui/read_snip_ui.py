@@ -2037,7 +2037,10 @@ class MyShelfToolUI(QtWidgets.QWidget):
         
         model = self.source_filter_combo.model()
         model.clear()
-        saved_sources = self.settings.value("selected_sources", [])
+        
+        # Ensure saved_sources is a list
+        saved_sources = self.settings.value("selected_sources", [], type=list)
+        
         for source in sorted(sources):
             item = QtGui.QStandardItem(source)
             item.setCheckable(True)
