@@ -1,30 +1,38 @@
-import hou
-import os
-import json
-import glob
-import re
-import logging
-import shutil
-import platform
-import subprocess
-import asyncio
-import traceback
-import importlib
-import time
-from pathlib import Path
-from typing import List, Dict, Optional, Tuple
-from functools import partial
-from concurrent.futures import ThreadPoolExecutor
-from contextlib import contextmanager
+"""Read Snip UI (snippet browser).
 
-from PIL import Image
+The companion tool to ``write_snip_ui``. Presents a shelf-tool window
+(:class:`MyShelfToolUI`) for browsing the per-user snippet library: it reads
+each user's ``master.json`` catalog, shows flipbook and snapshot previews, and
+loads a chosen snippet's nodes back into the current Houdini scene.
+
+Entry point: :func:`show_my_shelf_tool_ui`.
+"""
+
+import asyncio
+import importlib
+import json
+import logging
+import os
+import platform
+import re
+import shutil
+import subprocess
+import time
+import traceback
+from concurrent.futures import ThreadPoolExecutor
+from functools import partial
+from pathlib import Path
+from typing import Dict, List, Optional
+
+import hou
 import toolutils
+from PIL import Image
 
 from PySide2 import QtWidgets, QtCore, QtGui
 from PySide2.QtCore import Qt, QTimer, QSize, QSettings
-from PySide2.QtGui import QMovie, QPixmap, QImage, QPainter, QWheelEvent, QIcon, QFont
-from PySide2.QtWidgets import (QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, 
-                               QProgressDialog, QApplication, QMainWindow, QTreeWidget)
+from PySide2.QtGui import QPixmap, QFont
+from PySide2.QtWidgets import (QGraphicsView, QGraphicsScene, QGraphicsPixmapItem,
+                               QProgressDialog, QApplication, QTreeWidget)
 
 
 
@@ -53,6 +61,7 @@ except Exception as e:
 
 
 class FileManager:
+    """Resolves library paths and loads per-user snippet catalogs from disk."""
     def __init__(self, base_path: str):
         self.base_path = Path(base_path)
 
@@ -95,6 +104,7 @@ class FileManager:
         return preview_path
 
 class PreviewManager:
+    """Loads and scales flipbook frame sequences and snapshot images."""
     def __init__(self, max_preview_size: QtCore.QSize):
         self.max_preview_size = max_preview_size
         self.flipbook_frames = []
@@ -159,6 +169,7 @@ class PreviewManager:
         return None
 
 class CheckableComboBox(QtWidgets.QComboBox):
+    """A combo box whose items carry checkboxes and stay open on click."""
     def __init__(self, parent=None):
         super().__init__(parent)
         self.view().pressed.connect(self.handle_item_pressed)
@@ -181,6 +192,7 @@ class CheckableComboBox(QtWidgets.QComboBox):
         self.view().setMinimumWidth(self.view().sizeHintForColumn(0) + 20)
 
 class ClickableLabel(QtWidgets.QLabel):
+    """A QLabel that emits ``clicked`` when pressed (used for previews)."""
     clicked = QtCore.Signal()
 
     def mousePressEvent(self, event):
@@ -188,6 +200,7 @@ class ClickableLabel(QtWidgets.QLabel):
         super().mousePressEvent(event)
 
 class LargePreviewWindow(QtWidgets.QDialog):
+    """Pop-out window showing a zoomable, full-size snippet preview."""
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Large Preview")
@@ -400,6 +413,7 @@ class LargePreviewWindow(QtWidgets.QDialog):
         super().closeEvent(event)
 
 class NameEditorDelegate(QtWidgets.QStyledItemDelegate):
+    """Item delegate that commits and closes the editor on edit-finished."""
     def createEditor(self, parent, option, index):
         editor = super().createEditor(parent, option, index)
         if isinstance(editor, QtWidgets.QLineEdit):
@@ -411,6 +425,10 @@ class NameEditorDelegate(QtWidgets.QStyledItemDelegate):
         self.closeEditor.emit(editor)
 
 class EditableTreeWidget(QtWidgets.QTreeWidget):
+    """Tree widget with inline name editing and keyboard navigation.
+
+    NOTE: currently unused by the shelf UI; retained for reference.
+    """
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setItemDelegate(NameEditorDelegate(self))
@@ -468,18 +486,12 @@ class EditableTreeWidget(QtWidgets.QTreeWidget):
             yield item
             item = get_next_item(item)
 
-class NameEditorDelegate(QtWidgets.QStyledItemDelegate):
-    def createEditor(self, parent, option, index):
-        editor = super().createEditor(parent, option, index)
-        if isinstance(editor, QtWidgets.QLineEdit):
-            editor.editingFinished.connect(lambda: self.commitAndCloseEditor(editor))
-        return editor
-
-    def commitAndCloseEditor(self, editor):
-        self.commitData.emit(editor)
-        self.closeEditor.emit(editor)
-
 class MyShelfToolUI(QtWidgets.QWidget):
+    """Main snippet-browser window.
+
+    Builds the user/filter controls and the snippet tree, drives preview
+    playback, and loads a selected snippet back into the current scene.
+    """
     instances = []
 
     @classmethod
@@ -3107,6 +3119,7 @@ class MyShelfToolUI(QtWidgets.QWidget):
 
 
 def show_my_shelf_tool_ui():
+    """Create and show the snippet browser window, returning it (or None)."""
     try:
         logger.info("Initializing MyShelfToolUI")
         window = MyShelfToolUI()
@@ -3119,46 +3132,3 @@ def show_my_shelf_tool_ui():
         logger.error(traceback.format_exc())
         print(f"Error opening UI: {str(e)}")
         return None
-    
-# def show_my_shelf_tool_ui():
-#     try:
-#         logger.info("Initializing MyShelfToolUI")
-#         window = MyShelfToolUI()
-        
-#         logger.info("Setting up UI components")
-#         window.setup_ui()
-        
-#         window = MyShelfToolUI()
-#         window.show()
-#         return window
-
-#     except Exception as e:
-#         logger.error(f"Error in show_my_shelf_tool_ui: {str(e)}")
-#         logger.error(traceback.format_exc())
-#         print(f"Error opening UI: {str(e)}")
-
-
-# def show_my_shelf_tool_ui():
-#     try:
-#         import hou
-#         from PySide2 import QtWidgets
-        
-#         app = QtWidgets.QApplication.instance()
-#         if not app:
-#             app = QtWidgets.QApplication([])
-        
-#         window = MyShelfToolUI()
-#         window.show()
-#         window.raise_()
-        
-#         return window
-#     except Exception as e:
-#         print(f"Error initializing MyShelfToolUI: {e}")
-#         import traceback
-#         traceback.print_exc()
-#         return None
-    
-# ... (rest of the existing code) ...
-
-# if __name__ == "__main__":
-#     show_my_shelf_tool_ui()

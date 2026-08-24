@@ -1,22 +1,32 @@
+"""Write Snip UI.
+
+A Houdini tool for saving the currently selected nodes as a reusable
+"snippet". The UI captures optional preview media (a flipbook GIF and a
+snapshot thumbnail) plus metadata (description and keywords), writes the
+nodes to a ``.uti`` file, and records an entry in a per-user ``master.json``
+catalog that the companion reader tool browses.
+
+Entry point: :func:`create_write_snip_ui`.
+"""
+
 import json
 import logging
-from pathlib import Path
-from typing import List, Optional, Union
-import re
-from datetime import datetime
 import os
+import platform
+import re
+import subprocess
+from datetime import datetime
+from pathlib import Path
+from typing import List, Optional
+
 import hou
+import toolutils
+from PIL import Image
 from PySide2 import QtWidgets, QtCore, QtGui
 from PySide2.QtGui import QMovie, QPixmap
-import toolutils
-import platform
-import subprocess
-from PIL import Image
-import glob
 from PySide2.QtWidgets import (
     QButtonGroup, QRadioButton, QHBoxLayout, QVBoxLayout,
     QWidget, QToolButton, QScrollArea, QSizePolicy, QFrame,
-    QTabWidget, QWidget, QGroupBox
 )
 from PySide2.QtCore import Qt, QParallelAnimationGroup, QPropertyAnimation, QAbstractAnimation
 
@@ -52,6 +62,8 @@ CONFIG = {
 SETTINGS_FILE = os.path.join(os.path.dirname(__file__), 'write_snip_ui_settings.json')
 
 class StyledWidget(QtWidgets.QWidget):
+    """Base widget that applies the shared dark stylesheet from ``CONFIG``."""
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setStyleSheet(self.get_base_style())
@@ -109,6 +121,8 @@ class StyledWidget(QtWidgets.QWidget):
         """
 
 class CollapsibleBox(QWidget):
+    """An expand/collapse container whose header toggles an animated body."""
+
     def __init__(self, title="", parent=None):
         super(CollapsibleBox, self).__init__(parent)
 
@@ -141,8 +155,6 @@ class CollapsibleBox(QWidget):
         self.toggle_animation.start()
 
     def setContentLayout(self, layout):
-        lay = self.content_area.layout()
-        del lay
         self.content_area.setLayout(layout)
         collapsed_height = self.sizeHint().height() - self.content_area.maximumHeight()
         content_height = layout.sizeHint().height()
@@ -158,6 +170,13 @@ class CollapsibleBox(QWidget):
         content_animation.setEndValue(content_height)
 
 class WriteSnipUI(StyledWidget):
+    """Main window for authoring and saving a snippet.
+
+    Collects the filename parameters, description and preview media, then
+    writes the selected nodes to disk and updates the master catalog. Emits
+    :attr:`snip_created` once a snippet has been saved successfully.
+    """
+
     snip_created = QtCore.Signal()
 
     def __init__(self):
@@ -480,8 +499,7 @@ class WriteSnipUI(StyledWidget):
         """)
         self.show_dialogs_checkbox.stateChanged.connect(self.save_dialog_preference)
         layout.addWidget(self.show_dialogs_checkbox)
-
-        self.load_dialog_preference()
+        # Note: the saved preference is loaded and applied in __init__.
 
     def save_dialog_preference(self):
         preference = self.show_dialogs_checkbox.isChecked()
@@ -504,11 +522,6 @@ class WriteSnipUI(StyledWidget):
         except Exception as e:
             print(f"Error loading dialog preference: {e}")
             return True
-
-    def closeEvent(self, event: QtGui.QCloseEvent):
-        self.cleanup()
-        self.save_dialog_preference()
-        super().closeEvent(event)
 
     def populate_user_combo(self):
         users = self.get_users()
@@ -919,6 +932,11 @@ class WriteSnipUI(StyledWidget):
         return file_path.stat().st_size if file_path.exists() else 0
 
     def update_master_json(self, file_name: Path, snapshot_path: Path):
+        """Insert or replace this snippet's entry in the user's ``master.json``.
+
+        Any existing entry with the same base file name is removed first, so
+        re-saving a snippet updates its catalog record rather than duplicating it.
+        """
         user = self.user_combo.currentText()
         master_json_path = self.CORE_PATH / user / "Snips" / "descriptions" / "master.json"
         
@@ -975,6 +993,12 @@ class WriteSnipUI(StyledWidget):
         return sorted(set(keywords))
 
     def save_selected_nodes(self, final_path: Path, file_name: str):
+        """Write the current node selection to ``final_path`` as a ``.uti`` file.
+
+        Raises:
+            ValueError: if nothing is selected, or the selected nodes do not
+                share a common parent.
+        """
         ext = '.uti'
         path = final_path.with_suffix(ext)
 
@@ -1048,6 +1072,11 @@ class WriteSnipUI(StyledWidget):
         self.update_file_name()
 
     def cleanup(self):
+        """Discard preview media if the window closed without saving a snip.
+
+        Prevents orphaned flipbook/snapshot files from accumulating when the
+        user captures previews but abandons the save.
+        """
         if not self.snip_saved:
             if self.flipbook_saved:
                 self.delete_flipbook()
@@ -1074,11 +1103,18 @@ class WriteSnipUI(StyledWidget):
                 print(f"Error deleting snapshot: {e}")
 
     def closeEvent(self, event: QtGui.QCloseEvent):
+        """Clean up unsaved preview media and persist preferences on close."""
         self.cleanup()
         self.save_dialog_preference()
         super().closeEvent(event)
 
 def create_write_snip_ui(callback: Optional[callable] = None):
+    """Create, show and return a :class:`WriteSnipUI` window.
+
+    Args:
+        callback: Optional callable connected to the ``snip_created`` signal,
+            invoked after a snippet is saved successfully.
+    """
     dialog = WriteSnipUI()
     if callback:
         dialog.snip_created.connect(callback)
