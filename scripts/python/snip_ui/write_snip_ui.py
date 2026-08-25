@@ -22,13 +22,13 @@ from typing import List, Optional
 import hou
 import toolutils
 from PIL import Image
-from PySide2 import QtWidgets, QtCore, QtGui
-from PySide2.QtGui import QMovie, QPixmap
-from PySide2.QtWidgets import (
+from PySide6 import QtWidgets, QtCore, QtGui
+from PySide6.QtGui import QMovie, QPixmap
+from PySide6.QtWidgets import (
     QButtonGroup, QRadioButton, QHBoxLayout, QVBoxLayout,
     QWidget, QToolButton, QScrollArea, QSizePolicy, QFrame,
 )
-from PySide2.QtCore import Qt, QParallelAnimationGroup, QPropertyAnimation, QAbstractAnimation
+from PySide6.QtCore import Qt, QParallelAnimationGroup, QPropertyAnimation, QAbstractAnimation
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

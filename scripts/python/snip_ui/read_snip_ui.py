@@ -28,10 +28,10 @@ import hou
 import toolutils
 from PIL import Image
 
-from PySide2 import QtWidgets, QtCore, QtGui
-from PySide2.QtCore import Qt, QTimer, QSize, QSettings
-from PySide2.QtGui import QPixmap, QFont
-from PySide2.QtWidgets import (QGraphicsView, QGraphicsScene, QGraphicsPixmapItem,
+from PySide6 import QtWidgets, QtCore, QtGui
+from PySide6.QtCore import Qt, QTimer, QSize, QSettings
+from PySide6.QtGui import QPixmap, QFont
+from PySide6.QtWidgets import (QGraphicsView, QGraphicsScene, QGraphicsPixmapItem,
                                QProgressDialog, QApplication, QTreeWidget)
 
 
@@ -263,7 +263,7 @@ class LargePreviewWindow(QtWidgets.QDialog):
         
         self.layout.addLayout(bottom_layout)
 
-        screen_rect = QtWidgets.QApplication.desktop().screenGeometry()
+        screen_rect = QtWidgets.QApplication.primaryScreen().geometry()
         self.setMinimumSize(screen_rect.width() // 2, screen_rect.height() // 2)
 
         self.flipbook_frames = []
@@ -310,7 +310,7 @@ class LargePreviewWindow(QtWidgets.QDialog):
             self.graphics_view.scale(factor, factor)
 
     def set_window_size(self, width, height):
-        screen_rect = QtWidgets.QApplication.desktop().screenGeometry()
+        screen_rect = QtWidgets.QApplication.primaryScreen().geometry()
         max_width = int(screen_rect.width() * 0.9)
         max_height = int(screen_rect.height() * 0.9)
         

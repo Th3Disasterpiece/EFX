@@ -6,9 +6,8 @@
  a single file. -->
 
   <toolshelf name="efx_snip_ui" label="EFX | Snip UI">
-    <memberTool name="write_snip_ui"/>
     <memberTool name="readSnipUI"/>
-    <memberTool name="testgeometry_crag_nodes_script"/>
+    <memberTool name="write_snip_ui"/>
   </toolshelf>
 
   <tool name="write_snip_ui" label="Write Snip UI" icon="$EFX/config/Icons/upload_blue.png">
