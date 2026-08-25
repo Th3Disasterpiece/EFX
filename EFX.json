@@ -1,7 +1,7 @@
 {
 	"env": [
 		{
-			"EFX": "/jobs/lib/packages/EFX"
+			"EFX": "/usr/jobs/lib/packages/EFX"
 		},
 		{
 			"HOUDINI_PYTHONWARNINGS": "ignore"
